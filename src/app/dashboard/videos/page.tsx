@@ -40,17 +40,18 @@ export default function FilesDB() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const files = Array.from(e.target.files);
+    const target = e.target;
 
     setUploading(true);
     setMessage('');
-    
+
     // Initialize queue
     setUploadQueue(files.map(f => ({ name: f.name, status: 'uploading', msg: 'Queued', progress: 0 })));
 
     // Process files one by one for maximum reliability
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
+
       await new Promise<void>((resolve) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -60,7 +61,7 @@ export default function FilesDB() {
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
             const pct = Math.round((event.loaded / event.total) * 100);
-            setUploadQueue(prev => prev.map((item, idx) => 
+            setUploadQueue(prev => prev.map((item, idx) =>
               idx === i ? { ...item, msg: pct < 100 ? `${pct}%` : 'Processing...', progress: pct } : item
             ));
           }
@@ -70,17 +71,17 @@ export default function FilesDB() {
           try {
             const data = JSON.parse(xhr.responseText);
             const result = data.results?.[0];
-            
-            setUploadQueue(prev => prev.map((item, idx) => 
-              idx === i ? { 
-                ...item, 
-                status: (result?.success || data.success) ? 'done' : 'error', 
+
+            setUploadQueue(prev => prev.map((item, idx) =>
+              idx === i ? {
+                ...item,
+                status: (result?.success || data.success) ? 'done' : 'error',
                 msg: result?.message || data.message || 'Complete',
-                progress: 100 
+                progress: 100
               } : item
             ));
           } catch {
-            setUploadQueue(prev => prev.map((item, idx) => 
+            setUploadQueue(prev => prev.map((item, idx) =>
               idx === i ? { ...item, status: 'error', msg: 'Server error', progress: 0 } : item
             ));
           }
@@ -88,7 +89,7 @@ export default function FilesDB() {
         };
 
         xhr.onerror = () => {
-          setUploadQueue(prev => prev.map((item, idx) => 
+          setUploadQueue(prev => prev.map((item, idx) =>
             idx === i ? { ...item, status: 'error', msg: 'Network error', progress: 0 } : item
           ));
           resolve();
@@ -101,8 +102,8 @@ export default function FilesDB() {
 
     setUploading(false);
     fetchVideos();
-    e.target.value = '';
-    
+    if (target) target.value = '';
+
     // Auto-clear success items after a while, but leave errors
     setTimeout(() => {
       setUploadQueue(prev => prev.filter(item => item.status === 'error'));
@@ -165,7 +166,9 @@ export default function FilesDB() {
     }
   };
 
-  const filteredVideos = videos.filter(v => v.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredVideos = (videos || []).filter(v => 
+    v && v.name && v.name.toLowerCase().includes((search || '').toLowerCase())
+  );
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
