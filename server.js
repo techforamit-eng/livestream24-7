@@ -48,7 +48,13 @@ function handleVideoUpload(req, res) {
   });
 
   bb.on('file', (fieldname, fileStream, fileInfo) => {
-    const safeName = path.basename(fileInfo.filename);
+    // Check for chunk headers/fields
+    const chunkIndex = parseInt(req.headers['x-chunk-index'] || '0', 10);
+    const totalChunks = parseInt(req.headers['x-total-chunks'] || '1', 10);
+    const fileName = req.headers['x-filename'] || fileInfo.filename;
+    const isChunked = totalChunks > 1;
+
+    const safeName = path.basename(fileName);
 
     if (!safeName.toLowerCase().endsWith('.mp4')) {
       results.push({ name: safeName, success: false, message: 'Not an MP4, skipped' });
@@ -57,17 +63,30 @@ function handleVideoUpload(req, res) {
     }
 
     const destPath = path.join(VIDEOS_DIR, safeName);
-    const writeStream = fs.createWriteStream(destPath);
+
+    // For first chunk or non-chunked, we overwrite/create. Otherwise we append.
+    const writeFlag = (isChunked && chunkIndex > 0) ? 'a' : 'w';
+    const writeStream = fs.createWriteStream(destPath, { flags: writeFlag });
 
     const p = new Promise((resolve) => {
       fileStream.pipe(writeStream);
 
       writeStream.on('finish', () => {
-        try {
-          const stat = fs.statSync(destPath);
-          results.push({ name: safeName, success: true, message: `Saved (${formatSize(stat.size)})` });
-        } catch (e) {
-          results.push({ name: safeName, success: true, message: 'Saved' });
+        if (isChunked) {
+          const isLast = chunkIndex === totalChunks - 1;
+          results.push({
+            name: safeName,
+            success: true,
+            message: isLast ? `Saved (${formatSize(fs.statSync(destPath).size)})` : `Chunk ${chunkIndex + 1}/${totalChunks} saved`,
+            isComplete: isLast
+          });
+        } else {
+          try {
+            const stat = fs.statSync(destPath);
+            results.push({ name: safeName, success: true, message: `Saved (${formatSize(stat.size)})` });
+          } catch (e) {
+            results.push({ name: safeName, success: true, message: 'Saved' });
+          }
         }
         resolve();
       });
@@ -93,7 +112,7 @@ function handleVideoUpload(req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       success: allSuccess,
-      message: `${successCount} of ${results.length} file(s) uploaded successfully`,
+      message: `${successCount} of ${results.length} part(s) processed`,
       results,
     }));
   });
@@ -132,6 +151,8 @@ app.prepare().then(() => {
   server.timeout = 0;
   server.keepAliveTimeout = 0;
   server.headersTimeout = 0;
+  server.requestTimeout = 0;
+  server.maxRequestsPerSocket = 0;
 
   server.listen(port, hostname, () => {
     console.log(`> Ready on http://${hostname}:${port}`);

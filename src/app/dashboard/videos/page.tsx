@@ -49,55 +49,80 @@ export default function FilesDB() {
     setUploadQueue(files.map(f => ({ name: f.name, status: 'uploading', msg: 'Queued', progress: 0 })));
 
     // Process files one by one for maximum reliability
+    const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB chunks
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
-      await new Promise<void>((resolve) => {
-        const formData = new FormData();
-        formData.append('file', file);
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        const start = chunkIndex * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
 
-        const xhr = new XMLHttpRequest();
+        await new Promise<void>((resolve, reject) => {
+          const formData = new FormData();
+          formData.append('file', chunk);
 
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const pct = Math.round((event.loaded / event.total) * 100);
-            setUploadQueue(prev => prev.map((item, idx) =>
-              idx === i ? { ...item, msg: pct < 100 ? `${pct}%` : 'Processing...', progress: pct } : item
-            ));
-          }
-        };
+          const xhr = new XMLHttpRequest();
 
-        xhr.onload = () => {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            const result = data.results?.[0];
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const uploadedBytes = start + event.loaded;
+              const totalPct = Math.round((uploadedBytes / file.size) * 100);
+              
+              setUploadQueue(prev => prev.map((item, idx) =>
+                idx === i ? { 
+                  ...item, 
+                  msg: totalPct < 100 ? `${totalPct}%` : 'Processing...', 
+                  progress: totalPct 
+                } : item
+              ));
+            }
+          };
 
-            setUploadQueue(prev => prev.map((item, idx) =>
-              idx === i ? {
-                ...item,
-                status: (result?.success || data.success) ? 'done' : 'error',
-                msg: result?.message || data.message || 'Complete',
-                progress: 100
-              } : item
-            ));
-          } catch {
-            setUploadQueue(prev => prev.map((item, idx) =>
-              idx === i ? { ...item, status: 'error', msg: 'Server error', progress: 0 } : item
-            ));
-          }
-          resolve();
-        };
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const data = JSON.parse(xhr.responseText);
+                const result = data.results?.[0];
 
-        xhr.onerror = () => {
+                // If it's the last chunk, or if it's not chunked, finalize the status
+                if (chunkIndex === totalChunks - 1) {
+                  setUploadQueue(prev => prev.map((item, idx) =>
+                    idx === i ? {
+                      ...item,
+                      status: (result?.success || data.success) ? 'done' : 'error',
+                      msg: result?.message || data.message || 'Complete',
+                      progress: 100
+                    } : item
+                  ));
+                }
+                resolve();
+              } catch {
+                reject(new Error('Invalid server response'));
+              }
+            } else {
+              reject(new Error(`Server returned ${xhr.status}`));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error('Network error'));
+          
+          xhr.open('POST', '/api/videos');
+          // Add chunking headers
+          xhr.setRequestHeader('x-filename', file.name);
+          xhr.setRequestHeader('x-chunk-index', chunkIndex.toString());
+          xhr.setRequestHeader('x-total-chunks', totalChunks.toString());
+          xhr.send(formData);
+        }).catch((err) => {
           setUploadQueue(prev => prev.map((item, idx) =>
-            idx === i ? { ...item, status: 'error', msg: 'Network error', progress: 0 } : item
+            idx === i ? { ...item, status: 'error', msg: err.message || 'Error', progress: 0 } : item
           ));
-          resolve();
-        };
-
-        xhr.open('POST', '/api/videos');
-        xhr.send(formData);
-      });
+          // Stop processing chunks for this file if one fails
+          chunkIndex = totalChunks; 
+        });
+      }
     }
 
     setUploading(false);
@@ -166,7 +191,7 @@ export default function FilesDB() {
     }
   };
 
-  const filteredVideos = (videos || []).filter(v => 
+  const filteredVideos = (videos || []).filter(v =>
     v && v.name && v.name.toLowerCase().includes((search || '').toLowerCase())
   );
 
