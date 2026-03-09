@@ -42,8 +42,9 @@ function handleVideoUpload(req, res) {
   const bb = Busboy({
     headers: req.headers,
     limits: {
-      fileSize: 100 * 1024 * 1024 * 1024, // 100 GB
-      files: 50,
+      fileSize: Infinity, // Unlimited file size
+      files: Infinity,    // Unlimited file count
+      fieldSize: Infinity // Unlimited field size
     },
   });
 

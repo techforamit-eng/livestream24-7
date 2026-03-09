@@ -217,7 +217,7 @@ export default function FilesDB() {
             <p className="text-base text-gray-400">
               <span className="font-bold text-white">Click to upload</span> &nbsp;or drag and drop
             </p>
-            <p className="text-xs text-gray-600 mt-1.5">MP4 files only · Multiple files supported · Max 100 GB each</p>
+            <p className="text-xs text-gray-600 mt-1.5">MP4 files only · Multiple files supported</p>
           </div>
           <input type="file" className="hidden" accept=".mp4" multiple onChange={handleUpload} disabled={uploading} />
         </label>
