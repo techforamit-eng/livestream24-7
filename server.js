@@ -109,7 +109,7 @@ function handleVideoUpload(req, res) {
 }
 
 app.prepare().then(() => {
-const server = createServer(async (req, res) => {
+  const server = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
 

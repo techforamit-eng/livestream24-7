@@ -41,67 +41,72 @@ export default function FilesDB() {
     if (!e.target.files || e.target.files.length === 0) return;
     const files = Array.from(e.target.files);
 
-    // Initialise queue with 0% progress
-    setUploadQueue(files.map(f => ({ name: f.name, status: 'uploading', msg: '0%', progress: 0 })));
     setUploading(true);
     setMessage('');
+    
+    // Initialize queue
+    setUploadQueue(files.map(f => ({ name: f.name, status: 'uploading', msg: 'Queued', progress: 0 })));
 
-    const formData = new FormData();
-    files.forEach(f => formData.append('file', f));
+    // Process files one by one for maximum reliability
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      await new Promise<void>((resolve) => {
+        const formData = new FormData();
+        formData.append('file', file);
 
-    await new Promise<void>((resolve) => {
-      const xhr = new XMLHttpRequest();
+        const xhr = new XMLHttpRequest();
 
-      // Track upload progress
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const pct = Math.round((event.loaded / event.total) * 100);
-          setUploadQueue(files.map(f => ({
-            name: f.name,
-            status: 'uploading',
-            msg: pct < 100 ? `${pct}%` : 'Processing...',
-            progress: pct,
-          })));
-        }
-      };
-
-      xhr.onload = () => {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          if (data.results) {
-            setUploadQueue(data.results.map((r: any) => ({
-              name: r.name,
-              status: r.success ? 'done' : 'error',
-              msg: r.message,
-              progress: r.success ? 100 : 0,
-            })));
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const pct = Math.round((event.loaded / event.total) * 100);
+            setUploadQueue(prev => prev.map((item, idx) => 
+              idx === i ? { ...item, msg: pct < 100 ? `${pct}%` : 'Processing...', progress: pct } : item
+            ));
           }
-          if (data.success || data.results?.some((r: any) => r.success)) {
-            fetchVideos();
-            setMessage(data.message || 'Upload complete');
-          } else {
-            setMessage(data.message || 'Upload failed');
+        };
+
+        xhr.onload = () => {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            const result = data.results?.[0];
+            
+            setUploadQueue(prev => prev.map((item, idx) => 
+              idx === i ? { 
+                ...item, 
+                status: (result?.success || data.success) ? 'done' : 'error', 
+                msg: result?.message || data.message || 'Complete',
+                progress: 100 
+              } : item
+            ));
+          } catch {
+            setUploadQueue(prev => prev.map((item, idx) => 
+              idx === i ? { ...item, status: 'error', msg: 'Server error', progress: 0 } : item
+            ));
           }
-        } catch {
-          setMessage('Server response error');
-        }
-        setTimeout(() => { setMessage(''); setUploadQueue([]); }, 8000);
-        resolve();
-      };
+          resolve();
+        };
 
-      xhr.onerror = () => {
-        setMessage('Upload error. Please try again.');
-        setUploadQueue(files.map(f => ({ name: f.name, status: 'error', msg: 'Network error', progress: 0 })));
-        setTimeout(() => { setMessage(''); setUploadQueue([]); }, 8000);
-        resolve();
-      };
+        xhr.onerror = () => {
+          setUploadQueue(prev => prev.map((item, idx) => 
+            idx === i ? { ...item, status: 'error', msg: 'Network error', progress: 0 } : item
+          ));
+          resolve();
+        };
 
-      xhr.open('POST', '/api/videos');
-      xhr.send(formData);
-    });
+        xhr.open('POST', '/api/videos');
+        xhr.send(formData);
+      });
+    }
 
     setUploading(false);
+    fetchVideos();
     e.target.value = '';
+    
+    // Auto-clear success items after a while, but leave errors
+    setTimeout(() => {
+      setUploadQueue(prev => prev.filter(item => item.status === 'error'));
+    }, 10000);
   };
 
   const handleDelete = async (filename: string) => {
