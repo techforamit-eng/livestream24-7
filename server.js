@@ -109,7 +109,7 @@ function handleVideoUpload(req, res) {
 }
 
 app.prepare().then(() => {
-  createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
 
@@ -126,8 +126,16 @@ app.prepare().then(() => {
       res.statusCode = 500;
       res.end('Internal Server Error');
     }
-  }).listen(port, hostname, () => {
+  });
+
+  // Set timeouts to 0 (unlimited) for large uploads
+  server.timeout = 0;
+  server.keepAliveTimeout = 0;
+  server.headersTimeout = 0;
+
+  server.listen(port, hostname, () => {
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(`> Video uploads handled directly (bypassing Next.js body parser)`);
+    console.log(`> Server timeouts disabled for large file support`);
   });
 });
