@@ -1,0 +1,29 @@
+{
+  "adminPassHash": "$2b$10$Ka3CmVQ.Iez0m1/qvTYVLePJV/cca6e93hYelo5Y9UCajApeIWTWW",
+  "streamKeys": [
+    {
+      "id": "03da3142-57f1-4975-8f92-c5ac3200303c",
+      "name": "Nisha Upadhyay",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "he7r-wvr4-u82c-ks7u-bj0t"
+    }
+  ],
+  "streams": [
+    {
+      "id": "587daecb-c05e-4d9c-b0bc-e9768017fe22",
+      "name": "Nisha",
+      "profileId": "03da3142-57f1-4975-8f92-c5ac3200303c",
+      "resolution": "1080p",
+      "autoStop": false,
+      "autoStopHours": 1,
+      "autoRestart": true,
+      "autoRestartDelayMinutes": 5,
+      "bitrate": "4000k",
+      "fps": "60",
+      "playlist": [
+        "heyrishu.mp4",
+        "Hili Na Kamariya (1).mp4"
+      ]
+    }
+  ]
+}
