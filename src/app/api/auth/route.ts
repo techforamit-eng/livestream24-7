@@ -18,8 +18,9 @@ export async function POST(req: Request) {
       const cookieStore = await cookies();
       cookieStore.set('auth-token', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        // Set to false for now so login works on VPS IP address without SSL
+        secure: false, 
+        sameSite: 'lax', 
         maxAge: 86400,
         path: '/'
       });
