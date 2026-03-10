@@ -29,14 +29,83 @@ interface ActiveStream {
   isScheduledRestart?: boolean;
 }
 
-const activeStreams = new Map<string, ActiveStream>();
+const globalActiveStreams = (global as any).activeStreams || new Map<string, ActiveStream>();
+if (process.env.NODE_ENV !== 'production') {
+  (global as any).activeStreams = globalActiveStreams;
+}
+const activeStreams: Map<string, ActiveStream> = globalActiveStreams;
+
+// Track PIDs for cross-restart cleanup
+const PIDS_FILE = path.join(process.cwd(), 'active_pids.json');
+
+function savePid(streamId: string, pid: number) {
+  try {
+    const pids = fs.existsSync(PIDS_FILE) ? JSON.parse(fs.readFileSync(PIDS_FILE, 'utf8')) : {};
+    pids[streamId] = pid;
+    fs.writeFileSync(PIDS_FILE, JSON.stringify(pids, null, 2));
+  } catch (e) { }
+}
+
+function removePid(streamId: string) {
+  try {
+    if (fs.existsSync(PIDS_FILE)) {
+      const pids = JSON.parse(fs.readFileSync(PIDS_FILE, 'utf8'));
+      delete pids[streamId];
+      fs.writeFileSync(PIDS_FILE, JSON.stringify(pids, null, 2));
+    }
+  } catch (e) { }
+}
+
+/**
+ * Kill a process by PID robustly (cross-platform)
+ */
+function killProcess(pid: number) {
+  try {
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/F', '/T', '/PID', pid.toString()]);
+    } else {
+      process.kill(pid, 'SIGKILL');
+    }
+  } catch (e) {
+    // console.log(`Process ${pid} already dead or permission denied`);
+  }
+}
+
+/**
+ * Check if a process is still running
+ */
+function isProcessRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Cleanup orphaned processes on module load
+(function cleanupOrphans() {
+  if (fs.existsSync(PIDS_FILE)) {
+    try {
+      const pids = JSON.parse(fs.readFileSync(PIDS_FILE, 'utf8'));
+      for (const streamId in pids) {
+        const pid = pids[streamId];
+        if (isProcessRunning(pid)) {
+          console.log(`[Stream] Killing orphaned FFmpeg process ${pid} for stream ${streamId}`);
+          killProcess(pid);
+        }
+      }
+      fs.writeFileSync(PIDS_FILE, '{}'); // Clear after cleanup
+    } catch (e) { }
+  }
+})();
 
 export function addLog(streamId: string, message: string) {
   const stream = activeStreams.get(streamId);
   if (stream) {
     const time = new Date().toLocaleTimeString();
     stream.logs.push(`[${time}] ${message}`);
-    if (stream.logs.length > 100) stream.logs.shift(); // Keep last 100 logs per stream
+    if (stream.logs.length > 200) stream.logs.shift(); // Keep more logs
   }
 }
 
@@ -51,8 +120,16 @@ export function startStream(streamId: string) {
   const profile = streamConfig.profileId ? config.streamKeys.find((k: any) => k.id === streamConfig.profileId) : null;
 
   let stream = activeStreams.get(streamId);
-  if (stream && stream.process) {
+
+  // Robust check: check if process object exists AND if it's actually running
+  if (stream && stream.process && (stream.process.exitCode === null || isProcessRunning(stream.process.pid!))) {
     return { success: false, message: 'This stream is already running' };
+  }
+
+  // Clear any pending restart timeouts if we are starting manually
+  if (stream && stream.autoRestartTimeout) {
+    clearTimeout(stream.autoRestartTimeout);
+    stream.autoRestartTimeout = null;
   }
 
   if (!profile || !profile.streamKey || !profile.youtubeRtmpUrl) {
@@ -74,21 +151,24 @@ export function startStream(streamId: string) {
   fs.writeFileSync(playlistFile, fileLines.join('\n'));
 
   // 2. Prepare Variables
-  const bitrate = streamConfig.bitrate.replace('k', ''); // Ensure we have the number
+  const bitrate = (streamConfig.bitrate || '4000k').toString().replace('k', '');
   const fps = streamConfig.fps || '30';
-  const scale = RESOLUTION_MAP[streamConfig.resolution] || '1280:720';
+  const resLimit = RESOLUTION_MAP[streamConfig.resolution] || '1280:720';
+  const [w, h] = resLimit.split(':');
 
   const rtmpUrl = profile.youtubeRtmpUrl.endsWith('/') ? profile.youtubeRtmpUrl : profile.youtubeRtmpUrl + '/';
   const outputUrl = `${rtmpUrl}${profile.streamKey}`;
 
   // 3. Generate FFmpeg Arguments
+  // Note: -stream_loop -1 must be before -i for concat demuxer to loop correctly
   const args = [
+    '-loglevel', 'info',
     '-re',
-    '-stream_loop', '-1', // Loop indefinitely
+    '-stream_loop', '-1',
     '-f', 'concat',
     '-safe', '0',
     '-i', playlistFile,
-    '-vf', `scale=${scale}`,
+    '-vf', `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,format=yuv420p`,
     '-r', fps,
     '-c:v', 'libx264',
     '-preset', 'veryfast',
@@ -96,7 +176,7 @@ export function startStream(streamId: string) {
     '-maxrate', `${bitrate}k`,
     '-bufsize', `${parseInt(bitrate) * 2}k`,
     '-pix_fmt', 'yuv420p',
-    '-g', '60', // Keyframe interval (approx 2s at 30fps)
+    '-g', (parseInt(fps) * 2).toString(), // Dynamic keyframe interval
     '-c:a', 'aac',
     '-b:a', '128k',
     '-ar', '44100',
@@ -105,36 +185,46 @@ export function startStream(streamId: string) {
   ];
 
   try {
-    const process = spawn('ffmpeg', args, { stdio: 'pipe' });
+    // Kill any orphaned PID for this streamId just in case
+    const pids = fs.existsSync(PIDS_FILE) ? JSON.parse(fs.readFileSync(PIDS_FILE, 'utf8')) : {};
+    if (pids[streamId] && isProcessRunning(pids[streamId])) {
+      killProcess(pids[streamId]);
+    }
 
-    // Initialize stream state
+    console.log(`[Stream] Executing: ffmpeg ${args.join(' ')}`);
+    const ffmpegProcess = spawn('ffmpeg', args, { stdio: 'pipe' });
+
+    if (!ffmpegProcess.pid) {
+      throw new Error('Failed to spawn FFmpeg process');
+    }
+
+    savePid(streamId, ffmpegProcess.pid);
+
+    // Initialize/Update stream state
     activeStreams.set(streamId, {
-      process,
+      process: ffmpegProcess,
       status: 'Running',
       startTime: new Date(),
-      logs: [],
+      logs: stream ? stream.logs : [], // Preserve logs if restarting
       autoStopTimeout: null,
       autoRestartTimeout: null
     });
 
-    const activeRecord = activeStreams.get(streamId)!;
-
-    process.stderr?.on('data', (data: any) => {
+    ffmpegProcess.stderr?.on('data', (data: any) => {
       const msg = data.toString().trim();
       if (msg) addLog(streamId, msg);
     });
 
-    process.on('close', (code: number | null) => {
+    ffmpegProcess.on('close', (code: number | null) => {
       addLog(streamId, `FFmpeg process exited with code ${code}`);
       const current = activeStreams.get(streamId);
+      removePid(streamId);
 
       if (current) {
         if (current.autoStopTimeout) clearTimeout(current.autoStopTimeout);
 
         // Code 255 is usually SIGINT (manual stop)
         const isManualStop = code === 255 || code === null;
-
-        // If it's a scheduled restart or it crashed and autoRestart is on
         const shouldRestart = current.isScheduledRestart || (!isManualStop && streamConfig.autoRestart);
 
         if (shouldRestart) {
@@ -142,25 +232,30 @@ export function startStream(streamId: string) {
           const delay = streamConfig.autoRestartDelayMinutes || 5;
 
           if (current.isScheduledRestart) {
-            current.status = 'Stopped'; // Show as stopped during the scheduled wait
-            addLog(streamId, `Waiting ${delay} minutes before restarting stream.`);
+            current.status = 'Stopped';
+            addLog(streamId, `Waiting ${delay} minutes before auto-refresh restart.`);
           } else {
-            addLog(streamId, `Connection dropped/Crashed. Reconnecting in ${delay} minutes...`);
+            addLog(streamId, `Process exited (${code}). Reconnecting in ${delay} minutes...`);
           }
 
+          // Clear any existing timeout
+          if (current.autoRestartTimeout) clearTimeout(current.autoRestartTimeout);
+
           current.autoRestartTimeout = setTimeout(() => {
-            activeStreams.delete(streamId);
+            current.status = 'Stopped';
+            current.process = undefined as any;
             startStream(streamId);
           }, delay * 60000);
         } else {
           current.status = 'Stopped';
           current.startTime = null;
+          current.process = undefined as any;
         }
       }
     });
 
-    process.on('error', (err: Error) => {
-      addLog(streamId, `FFmpeg process error: ${err.message}`);
+    ffmpegProcess.on('error', (err: Error) => {
+      addLog(streamId, `FFmpeg spawn error: ${err.message}`);
       const current = activeStreams.get(streamId);
       if (current) {
         current.status = 'Error';
@@ -168,22 +263,19 @@ export function startStream(streamId: string) {
       }
     });
 
+    // Auto-Stop Timer
     if (streamConfig.autoStop && streamConfig.autoStopHours > 0) {
-      activeRecord.autoStopTimeout = setTimeout(() => {
-        addLog(streamId, `Hard Auto Stop reached (${streamConfig.autoStopHours} hour). Stopping stream.`);
-
+      activeStreams.get(streamId)!.autoStopTimeout = setTimeout(() => {
+        addLog(streamId, `Auto-refresh interval reached (${streamConfig.autoStopHours}h). Restarting...`);
         const current = activeStreams.get(streamId);
-        if (current) {
+        if (current && current.process) {
           current.isScheduledRestart = true;
-          // Kill with SIGINT to stop nicely
-          current.process.kill('SIGINT');
-          current.status = 'Stopped'; // Backend status update
-          // We don't call stopStream here because that clears isScheduledRestart
+          killProcess(current.process.pid!);
         }
       }, streamConfig.autoStopHours * 3600000);
     }
 
-    addLog(streamId, 'Stream started successfully');
+    addLog(streamId, 'Stream process initialized.');
     return { success: true, message: 'Stream started successfully.' };
 
   } catch (err: any) {
@@ -193,16 +285,32 @@ export function startStream(streamId: string) {
 
 export function stopStream(streamId: string) {
   const stream = activeStreams.get(streamId);
+  // Clear any restart timeouts regardless of whether process exists
+  if (stream && stream.autoRestartTimeout) clearTimeout(stream.autoRestartTimeout);
+
   if (stream && stream.process) {
-    addLog(streamId, 'Stream stopped manually.');
-    stream.isScheduledRestart = false; // Break the automation loop
-    stream.process.kill('SIGINT');
+    const pid = stream.process.pid;
+    addLog(streamId, `Stopping stream (PID ${pid})...`);
+    stream.isScheduledRestart = false;
+
+    if (pid && isProcessRunning(pid)) {
+      killProcess(pid);
+    }
+
     stream.status = 'Stopped';
     stream.startTime = null;
     if (stream.autoStopTimeout) clearTimeout(stream.autoStopTimeout);
-    if (stream.autoRestartTimeout) clearTimeout(stream.autoRestartTimeout);
+
+    removePid(streamId);
     return { success: true, message: 'Stream stopped successfully.' };
   }
+
+  // If no process object but we have an entry, just reset it
+  if (stream) {
+    stream.status = 'Stopped';
+    return { success: true, message: 'Stream status reset to Stopped.' };
+  }
+
   return { success: false, message: 'Stream is not running.' };
 }
 
@@ -221,3 +329,4 @@ export function getStreamStatus() {
 
   return statuses;
 }
+
