@@ -26,6 +26,7 @@ interface ActiveStream {
   process: ChildProcess;
   status: 'Stopped' | 'Running' | 'Error';
   startTime: Date | null;
+  scheduledStop: Date | null;
   logs: string[];
   autoStopTimeout: NodeJS.Timeout | null;
   autoRestartTimeout: NodeJS.Timeout | null;
@@ -129,10 +130,17 @@ export function startStream(streamId: string) {
     return { success: false, message: 'This stream is already running' };
   }
 
-  // Clear any pending restart timeouts if we are starting manually
-  if (stream && stream.autoRestartTimeout) {
-    clearTimeout(stream.autoRestartTimeout);
-    stream.autoRestartTimeout = null;
+  // Clear any pending timeouts if we are starting/restarting
+  if (stream) {
+    if (stream.autoRestartTimeout) {
+      clearTimeout(stream.autoRestartTimeout);
+      stream.autoRestartTimeout = null;
+    }
+    if (stream.autoStopTimeout) {
+      clearTimeout(stream.autoStopTimeout);
+      stream.autoStopTimeout = null;
+    }
+    stream.isScheduledRestart = false;
   }
 
   if (!profile || !profile.streamKey || !profile.youtubeRtmpUrl) {
@@ -208,6 +216,7 @@ export function startStream(streamId: string) {
       process: ffmpegProcess,
       status: 'Running',
       startTime: new Date(),
+      scheduledStop: null,
       logs: stream ? stream.logs : [], // Preserve logs if restarting
       autoStopTimeout: null,
       autoRestartTimeout: null
@@ -219,40 +228,47 @@ export function startStream(streamId: string) {
     });
 
     ffmpegProcess.on('close', (code: number | null) => {
-      addLog(streamId, `FFmpeg process exited with code ${code}`);
       const current = activeStreams.get(streamId);
+      const isScheduledRestart = current?.isScheduledRestart;
+      
+      addLog(streamId, `FFmpeg process exited with code ${code}${isScheduledRestart ? ' (Scheduled Restart)' : ''}`);
       removePid(streamId);
 
       if (current) {
-        if (current.autoStopTimeout) clearTimeout(current.autoStopTimeout);
+        if (current.autoStopTimeout) {
+          clearTimeout(current.autoStopTimeout);
+          current.autoStopTimeout = null;
+        }
 
-        // Code 255 is usually SIGINT (manual stop)
-        const isManualStop = code === 255 || code === null;
-        const shouldRestart = current.isScheduledRestart || (!isManualStop && streamConfig.autoRestart);
+        // Code 255 is usually SIGINT (manual stop). null often means killed by Signal.
+        const isManualStop = code === 255 || (code === null && !isScheduledRestart);
+        const shouldRestart = isScheduledRestart || (!isManualStop && streamConfig.autoRestart);
 
         if (shouldRestart) {
-          current.status = 'Error';
+          current.status = 'Stopped'; // Show as stopped while waiting
           const delay = streamConfig.autoRestartDelayMinutes || 5;
 
-          if (current.isScheduledRestart) {
-            current.status = 'Stopped';
-            addLog(streamId, `Waiting ${delay} minutes before auto-refresh restart.`);
+          if (isScheduledRestart) {
+            addLog(streamId, `Auto-stop reached. Waiting ${delay} minutes before reconnecting...`);
           } else {
-            addLog(streamId, `Process exited (${code}). Reconnecting in ${delay} minutes...`);
+            addLog(streamId, `Unexpected exit. Reconnecting in ${delay} minutes...`);
           }
 
-          // Clear any existing timeout
+          // Clear any existing timeout before setting a new one
           if (current.autoRestartTimeout) clearTimeout(current.autoRestartTimeout);
 
           current.autoRestartTimeout = setTimeout(() => {
-            current.status = 'Stopped';
+            addLog(streamId, 'Executing scheduled reconnect/restart...');
             current.process = undefined as any;
+            current.isScheduledRestart = false; // Reset before starting new
             startStream(streamId);
           }, delay * 60000);
         } else {
           current.status = 'Stopped';
           current.startTime = null;
           current.process = undefined as any;
+          current.isScheduledRestart = false;
+          addLog(streamId, 'Stream stopped.');
         }
       }
     });
@@ -267,15 +283,25 @@ export function startStream(streamId: string) {
     });
 
     // Auto-Stop Timer
-    if (streamConfig.autoStop && streamConfig.autoStopHours > 0) {
+    // Rely only on autoStopHours > 0 for this feature as per user feedback
+    if (streamConfig.autoStopHours > 0) {
+      const ms = streamConfig.autoStopHours * 3600000;
+      const scheduledStop = new Date(Date.now() + ms);
+      const active = activeStreams.get(streamId);
+      if (active) active.scheduledStop = scheduledStop;
+
+      addLog(streamId, `Hard Auto-Stop scheduled in ${streamConfig.autoStopHours} hours (at ${scheduledStop.toLocaleTimeString()}).`);
+      
       activeStreams.get(streamId)!.autoStopTimeout = setTimeout(() => {
-        addLog(streamId, `Auto-refresh interval reached (${streamConfig.autoStopHours}h). Restarting...`);
         const current = activeStreams.get(streamId);
         if (current && current.process) {
+          addLog(streamId, `Auto-stop timer reached (${streamConfig.autoStopHours}h). Triggering restart sequence...`);
           current.isScheduledRestart = true;
           killProcess(current.process.pid!);
+        } else {
+          addLog(streamId, `Auto-stop timer reached but no active process found.`);
         }
-      }, streamConfig.autoStopHours * 3600000);
+      }, ms);
     }
 
     addLog(streamId, 'Stream process initialized.');
@@ -326,6 +352,7 @@ export function getStreamStatus() {
     statuses[stream.id] = {
       status: active ? active.status : 'Stopped',
       uptime: active && active.startTime ? Math.floor((new Date().getTime() - active.startTime.getTime()) / 1000) : 0,
+      scheduledStop: active ? active.scheduledStop : null,
       logs: active ? active.logs : [],
     };
   });

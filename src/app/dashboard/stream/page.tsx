@@ -220,6 +220,18 @@ export default function StreamControl() {
                         <span className="text-gray-500 text-sm">Bitrate Limit</span>
                         <span className="text-gray-200 text-sm font-medium">{streamDef.bitrate}</span>
                       </div>
+                      {isRunning && currentStatus.scheduledStop && (
+                        <div className="flex justify-between border-b border-gray-800/50 pb-2">
+                          <span className="text-red-500/80 text-sm font-semibold flex items-center"><Clock className="w-3 h-3 mr-1" /> Next Auto-Stop</span>
+                          <span className="text-red-400 text-sm font-bold">{new Date(currentStatus.scheduledStop).toLocaleTimeString()}</span>
+                        </div>
+                      )}
+                      {streamDef.autoRestart && (
+                        <div className="flex justify-between border-b border-gray-800/50 pb-2">
+                          <span className="text-blue-500/80 text-sm font-semibold flex items-center"><RotateCw className="w-3 h-3 mr-1" /> Reconnect Delay</span>
+                          <span className="text-blue-400 text-sm font-bold">{streamDef.autoRestartDelayMinutes} Mins</span>
+                        </div>
+                      )}
                       <div className="flex justify-between pb-2 items-center">
                         <span className="text-gray-500 text-sm">Playlist Length</span>
                         <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${streamDef.playlist.length === 0 ? 'bg-red-500/20 text-red-500' : 'bg-gray-800 text-gray-200'}`}>{streamDef.playlist.length} Videos</span>
