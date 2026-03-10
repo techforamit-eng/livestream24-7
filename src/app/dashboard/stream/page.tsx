@@ -368,6 +368,9 @@ export default function StreamControl() {
                           onChange={e => setEditingStream({ ...editingStream, resolution: e.target.value })}
                           className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none appearance-none"
                         >
+                          <option value="144p">144p (Ultra Low)</option>
+                          <option value="240p">240p (Very Low)</option>
+                          <option value="360p">360p (Low Quality)</option>
                           <option value="480p">480p (SD)</option>
                           <option value="720p">720p (HD)</option>
                           <option value="1080p">1080p (Full HD)</option>
@@ -395,6 +398,9 @@ export default function StreamControl() {
                           onChange={e => setEditingStream({ ...editingStream, bitrate: e.target.value })}
                           className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none appearance-none"
                         >
+                          <option value="400k">400 kbps (Good for 144p)</option>
+                          <option value="700k">700 kbps (Good for 240p)</option>
+                          <option value="1000k">1000 kbps (Good for 360p)</option>
                           <option value="1500k">1500 kbps (Good for 480p)</option>
                           <option value="2500k">2500 kbps (Good for 720p)</option>
                           <option value="4000k">4000 kbps (Standard 1080p)</option>
