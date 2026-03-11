@@ -24,7 +24,7 @@ const RESOLUTION_MAP: Record<string, string> = {
 
 interface ActiveStream {
   process: ChildProcess;
-  status: 'Stopped' | 'Running' | 'Error';
+  status: 'Stopped' | 'Running' | 'Error' | 'Waiting';
   startTime: Date | null;
   scheduledStop: Date | null;
   logs: string[];
@@ -185,7 +185,8 @@ export function startStream(streamId: string) {
     '-vf', `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,format=yuv420p`,
     '-r', fps,
     '-c:v', 'libx264',
-    '-preset', 'veryfast',
+    '-preset', 'ultrafast',
+    '-tune', 'zerolatency',
     '-b:v', `${bitrate}k`,
     '-maxrate', `${bitrate}k`,
     '-bufsize', `${parseInt(bitrate) * 2}k`,
@@ -249,7 +250,7 @@ export function startStream(streamId: string) {
         const shouldRestart = isScheduledRestart || (!isManuallyStopping && code !== 255 && streamConfig.autoRestart);
 
         if (shouldRestart) {
-          current.status = 'Stopped'; // Show as stopped while waiting
+          current.status = 'Waiting'; // Explicitly set to Waiting
 
           let delayMinutes = streamConfig.autoRestartDelayMinutes;
           if (delayMinutes === 0) delayMinutes = 0.083; // ~5s
@@ -258,9 +259,9 @@ export function startStream(streamId: string) {
           const delaySeconds = Math.round(delayMinutes * 60);
 
           if (isScheduledRestart) {
-            addLog(streamId, `Periodic Refresh: Auto-stop reached. Waiting ${delaySeconds}s before starting new session...`);
+            addLog(streamId, `Auto-Stop reached. Waiting ${delaySeconds}s for CPU cleanup before restart...`);
           } else {
-            addLog(streamId, `Unexpected disconnect. Reconnecting in ${delaySeconds}s...`);
+            addLog(streamId, `Stream crashed/closed. Waiting ${delaySeconds}s to reconnect...`);
           }
 
           if (current.autoRestartTimeout) clearTimeout(current.autoRestartTimeout);
@@ -270,7 +271,8 @@ export function startStream(streamId: string) {
             if (nowStream) {
               nowStream.autoRestartTimeout = null;
               nowStream.isScheduledRestart = false;
-              addLog(streamId, 'Starting new automated stream session...');
+              nowStream.process = undefined as any; // Clear old reference
+              addLog(streamId, 'Restarting fresh FFmpeg process...');
               startStream(streamId);
             }
           }, delayMinutes * 60000);
