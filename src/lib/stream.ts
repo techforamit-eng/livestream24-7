@@ -31,6 +31,7 @@ interface ActiveStream {
   autoStopTimeout: NodeJS.Timeout | null;
   autoRestartTimeout: NodeJS.Timeout | null;
   isScheduledRestart?: boolean;
+  isManuallyStopping?: boolean;
 }
 
 const globalActiveStreams = (global as any).activeStreams || new Map<string, ActiveStream>();
@@ -230,8 +231,9 @@ export function startStream(streamId: string) {
     ffmpegProcess.on('close', (code: number | null) => {
       const current = activeStreams.get(streamId);
       const isScheduledRestart = current?.isScheduledRestart;
-      
-      addLog(streamId, `FFmpeg process exited with code ${code}${isScheduledRestart ? ' (Scheduled Restart)' : ''}`);
+      const isManuallyStopping = current?.isManuallyStopping;
+
+      addLog(streamId, `FFmpeg process exited with code ${code}${isScheduledRestart ? ' (Scheduled Restart)' : ''}${isManuallyStopping ? ' (Manual Stop)' : ''}`);
       removePid(streamId);
 
       if (current) {
@@ -240,9 +242,8 @@ export function startStream(streamId: string) {
           current.autoStopTimeout = null;
         }
 
-        // Code 255 is usually SIGINT (manual stop). null often means killed by Signal.
-        const isManualStop = code === 255 || (code === null && !isScheduledRestart);
-        const shouldRestart = isScheduledRestart || (!isManualStop && streamConfig.autoRestart);
+        // Only don't restart if it was a manual stop (clicked the button) or exit code 255
+        const shouldRestart = isScheduledRestart || (!isManuallyStopping && code !== 255 && streamConfig.autoRestart);
 
         if (shouldRestart) {
           current.status = 'Stopped'; // Show as stopped while waiting
@@ -291,7 +292,7 @@ export function startStream(streamId: string) {
       if (active) active.scheduledStop = scheduledStop;
 
       addLog(streamId, `Hard Auto-Stop scheduled in ${streamConfig.autoStopHours} hours (at ${scheduledStop.toLocaleTimeString()}).`);
-      
+
       activeStreams.get(streamId)!.autoStopTimeout = setTimeout(() => {
         const current = activeStreams.get(streamId);
         if (current && current.process) {
@@ -308,6 +309,7 @@ export function startStream(streamId: string) {
     return { success: true, message: 'Stream started successfully.' };
 
   } catch (err: any) {
+    addLog(streamId, `Critical failure starting stream: ${err.message}`);
     return { success: false, message: 'Failed to start stream: ' + err.message };
   }
 }
@@ -321,6 +323,7 @@ export function stopStream(streamId: string) {
     const pid = stream.process.pid;
     addLog(streamId, `Stopping stream (PID ${pid})...`);
     stream.isScheduledRestart = false;
+    stream.isManuallyStopping = true;
 
     if (pid && isProcessRunning(pid)) {
       killProcess(pid);
@@ -360,3 +363,39 @@ export function getStreamStatus() {
   return statuses;
 }
 
+
+/**
+ * Initialize all streams that have autoRestart enabled
+ */
+export function initAutomatedStreams() {
+  const config = getConfig();
+  config.streams.forEach(stream => {
+    if (stream.autoRestart) {
+      const active = activeStreams.get(stream.id);
+      // Only start if not already running and no pending restart timeout
+      if (!active || (active.status === 'Stopped' && !active.autoRestartTimeout)) {
+        console.log(`[Stream] Startup/Watchdog: Ensuring stream ${stream.name} (${stream.id}) is running`);
+        startStream(stream.id);
+      }
+    }
+  });
+}
+
+// Global initialization and watchdog
+if (typeof global !== 'undefined') {
+  const G = global as any;
+  if (!G.streamWatchdogStarted) {
+    G.streamWatchdogStarted = true;
+
+    // Initial start after a short delay to allow system to initialize
+    setTimeout(() => {
+      console.log('[Stream] Running initial automation check...');
+      initAutomatedStreams();
+    }, 10000);
+
+    // Watchdog every 5 minutes to ensure auto-restart streams are alive
+    setInterval(() => {
+      initAutomatedStreams();
+    }, 300000);
+  }
+}
