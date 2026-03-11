@@ -22,13 +22,5 @@ export async function POST(req: Request) {
     return NextResponse.json(res);
   }
 
-  if (action === 'restart') {
-    stopStream(streamId);
-    setTimeout(() => {
-      startStream(streamId);
-    }, 2000);
-    return NextResponse.json({ success: true, message: 'Restarting stream...' });
-  }
-
   return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
 }

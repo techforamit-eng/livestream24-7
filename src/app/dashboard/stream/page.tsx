@@ -229,7 +229,7 @@ export default function StreamControl() {
                     {streamDef.playlist.length === 0 && (
                       <div className="text-xs text-red-500 mb-3 font-semibold text-center border-b border-red-500/20 pb-2">Cannot start without videos in playlist. Click Configure.</div>
                     )}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => handleAction(streamDef.id, 'start')}
                         disabled={loading || isRunning || streamDef.playlist.length === 0}
@@ -251,15 +251,6 @@ export default function StreamControl() {
                       >
                         <Square className="w-6 h-6 group-hover:scale-110 transition-transform" />
                         <span className="text-xs font-semibold">Stop</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleAction(streamDef.id, 'restart')}
-                        disabled={loading || !isRunning}
-                        className="flex flex-col items-center justify-center space-y-2 bg-gray-900 border border-gray-800 hover:bg-blue-600 hover:border-blue-500 disabled:opacity-50 disabled:hover:bg-gray-900 disabled:hover:border-gray-800 text-gray-400 hover:text-white py-4 rounded-xl transition-all group"
-                      >
-                        <RotateCw className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                        <span className="text-xs font-semibold">Restart</span>
                       </button>
                     </div>
 
