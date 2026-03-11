@@ -229,7 +229,9 @@ export default function StreamControl() {
                       {streamDef.autoRestart && (
                         <div className="flex justify-between border-b border-gray-800/50 pb-2">
                           <span className="text-blue-500/80 text-sm font-semibold flex items-center"><RotateCw className="w-3 h-3 mr-1" /> Reconnect Delay</span>
-                          <span className="text-blue-400 text-sm font-bold">{streamDef.autoRestartDelayMinutes} Mins</span>
+                          <span className="text-blue-400 text-sm font-bold">
+                            {streamDef.autoRestartDelayMinutes === 0 ? 'Instant' : `${streamDef.autoRestartDelayMinutes} Min`}
+                          </span>
                         </div>
                       )}
                       <div className="flex justify-between pb-2 items-center">
@@ -428,18 +430,23 @@ export default function StreamControl() {
                     <h3 className="text-white font-semibold flex items-center mb-5 border-b border-gray-800 pb-2"><Clock className="w-4 h-4 mr-2 text-red-500" /> Automation Tools</h3>
                     <div className="space-y-4">
                       <label className="flex items-center justify-between cursor-pointer border border-gray-800 p-3 rounded-xl bg-[#161616] hover:bg-gray-900 transition-colors">
-                        <span className="text-gray-300 text-sm font-medium">Auto Restart Connection Drops</span>
+                        <span className="text-gray-300 text-sm font-medium">Enable Hard Auto-Stop (Periodic)</span>
+                        <input type="checkbox" className="w-5 h-5 accent-red-500 rounded bg-gray-900 border-gray-700" checked={editingStream.autoStop} onChange={e => setEditingStream({ ...editingStream, autoStop: e.target.checked })} />
+                      </label>
+                      <label className="flex items-center justify-between cursor-pointer border border-gray-800 p-3 rounded-xl bg-[#161616] hover:bg-gray-900 transition-colors">
+                        <span className="text-gray-300 text-sm font-medium">Auto Restart on Connection Drops</span>
                         <input type="checkbox" className="w-5 h-5 accent-red-500 rounded bg-gray-900 border-gray-700" checked={editingStream.autoRestart} onChange={e => setEditingStream({ ...editingStream, autoRestart: e.target.checked })} />
                       </label>
                       <div className="grid grid-cols-2 gap-4 pt-2">
                         <div>
-                          <InputLabel icon={Clock}>Hard Auto-Stop (Hours)</InputLabel>
-                          <input type="number" min="0" value={editingStream.autoStopHours} onChange={e => setEditingStream({ ...editingStream, autoStopHours: Number(e.target.value) })} className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none" />
-                          <span className="text-xs text-gray-600 mt-1 block">0 = Loop indefinitely</span>
+                          <InputLabel icon={Clock}>Auto-Stop Interval (Hours)</InputLabel>
+                          <input type="number" min="0" value={editingStream.autoStopHours} onChange={e => setEditingStream({ ...editingStream, autoStopHours: Number(e.target.value) })} className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none" disabled={!editingStream.autoStop} />
+                          <span className="text-xs text-gray-600 mt-1 block">Every {editingStream.autoStopHours}h the stream will refresh</span>
                         </div>
                         <div>
                           <InputLabel icon={Clock}>Reconnect Timeout (Mins)</InputLabel>
-                          <input type="number" min="1" value={editingStream.autoRestartDelayMinutes} onChange={e => setEditingStream({ ...editingStream, autoRestartDelayMinutes: Number(e.target.value) })} className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none" />
+                          <input type="number" step="0.1" min="0" value={editingStream.autoRestartDelayMinutes} onChange={e => setEditingStream({ ...editingStream, autoRestartDelayMinutes: Number(e.target.value) })} className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none" placeholder="0 for instant" />
+                          <span className="text-xs text-gray-600 mt-1 block">0 = fast restart (~5s)</span>
                         </div>
                       </div>
                     </div>

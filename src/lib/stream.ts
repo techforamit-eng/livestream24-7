@@ -168,8 +168,10 @@ export function startStream(streamId: string) {
   const resLimit = RESOLUTION_MAP[streamConfig.resolution] || '1280:720';
   const [w, h] = resLimit.split(':');
 
-  const rtmpUrl = profile.youtubeRtmpUrl.endsWith('/') ? profile.youtubeRtmpUrl : profile.youtubeRtmpUrl + '/';
-  const outputUrl = `${rtmpUrl}${profile.streamKey}`;
+  const streamKey = (profile.streamKey || '').trim();
+  const rawRtmpUrl = (profile.youtubeRtmpUrl || '').trim();
+  const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
+  const outputUrl = `${rtmpUrl}${streamKey}`;
 
   // 3. Generate FFmpeg Arguments
   // Note: -stream_loop -1 must be before -i for concat demuxer to loop correctly
@@ -193,6 +195,7 @@ export function startStream(streamId: string) {
     '-b:a', '128k',
     '-ar', '44100',
     '-f', 'flv',
+    '-flvflags', 'no_duration_filesize',
     outputUrl
   ];
 
@@ -247,23 +250,30 @@ export function startStream(streamId: string) {
 
         if (shouldRestart) {
           current.status = 'Stopped'; // Show as stopped while waiting
-          const delay = streamConfig.autoRestartDelayMinutes || 5;
+
+          let delayMinutes = streamConfig.autoRestartDelayMinutes;
+          if (delayMinutes === 0) delayMinutes = 0.083; // ~5s
+          else if (!delayMinutes) delayMinutes = 0.166; // ~10s
+
+          const delaySeconds = Math.round(delayMinutes * 60);
 
           if (isScheduledRestart) {
-            addLog(streamId, `Auto-stop reached. Waiting ${delay} minutes before reconnecting...`);
+            addLog(streamId, `Periodic Refresh: Auto-stop reached. Waiting ${delaySeconds}s before starting new session...`);
           } else {
-            addLog(streamId, `Unexpected exit. Reconnecting in ${delay} minutes...`);
+            addLog(streamId, `Unexpected disconnect. Reconnecting in ${delaySeconds}s...`);
           }
 
-          // Clear any existing timeout before setting a new one
           if (current.autoRestartTimeout) clearTimeout(current.autoRestartTimeout);
 
           current.autoRestartTimeout = setTimeout(() => {
-            addLog(streamId, 'Executing scheduled reconnect/restart...');
-            current.process = undefined as any;
-            current.isScheduledRestart = false; // Reset before starting new
-            startStream(streamId);
-          }, delay * 60000);
+            const nowStream = activeStreams.get(streamId);
+            if (nowStream) {
+              nowStream.autoRestartTimeout = null;
+              nowStream.isScheduledRestart = false;
+              addLog(streamId, 'Starting new automated stream session...');
+              startStream(streamId);
+            }
+          }, delayMinutes * 60000);
         } else {
           current.status = 'Stopped';
           current.startTime = null;
@@ -283,9 +293,8 @@ export function startStream(streamId: string) {
       }
     });
 
-    // Auto-Stop Timer
-    // Rely only on autoStopHours > 0 for this feature as per user feedback
-    if (streamConfig.autoStopHours > 0) {
+    // Auto-Stop Timer (Periodic Control)
+    if (streamConfig.autoStop && streamConfig.autoStopHours > 0) {
       const ms = streamConfig.autoStopHours * 3600000;
       const scheduledStop = new Date(Date.now() + ms);
       const active = activeStreams.get(streamId);
