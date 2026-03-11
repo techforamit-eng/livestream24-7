@@ -26,12 +26,7 @@ interface ActiveStream {
   process: ChildProcess;
   status: 'Stopped' | 'Running' | 'Error' | 'Waiting';
   startTime: Date | null;
-  scheduledStop: Date | null;
   logs: string[];
-  autoStopTimeout: NodeJS.Timeout | null;
-  autoRestartTimeout: NodeJS.Timeout | null;
-  isScheduledRestart?: boolean;
-  isManuallyStopping?: boolean;
 }
 
 const globalActiveStreams = (global as any).activeStreams || new Map<string, ActiveStream>();
@@ -131,17 +126,9 @@ export function startStream(streamId: string) {
     return { success: false, message: 'This stream is already running' };
   }
 
-  // Clear any pending timeouts if we are starting/restarting
+  // No-op for now as we removed timeouts
   if (stream) {
-    if (stream.autoRestartTimeout) {
-      clearTimeout(stream.autoRestartTimeout);
-      stream.autoRestartTimeout = null;
-    }
-    if (stream.autoStopTimeout) {
-      clearTimeout(stream.autoStopTimeout);
-      stream.autoStopTimeout = null;
-    }
-    stream.isScheduledRestart = false;
+    // We can clear logs if needed, but usually we keep them
   }
 
   if (!profile || !profile.streamKey || !profile.youtubeRtmpUrl) {
@@ -221,10 +208,7 @@ export function startStream(streamId: string) {
       process: ffmpegProcess,
       status: 'Running',
       startTime: new Date(),
-      scheduledStop: null,
       logs: stream ? stream.logs : [], // Preserve logs if restarting
-      autoStopTimeout: null,
-      autoRestartTimeout: null
     });
 
     ffmpegProcess.stderr?.on('data', (data: any) => {
@@ -233,56 +217,15 @@ export function startStream(streamId: string) {
     });
 
     ffmpegProcess.on('close', (code: number | null) => {
-      const current = activeStreams.get(streamId);
-      const isScheduledRestart = current?.isScheduledRestart;
-      const isManuallyStopping = current?.isManuallyStopping;
-
-      addLog(streamId, `FFmpeg process exited with code ${code}${isScheduledRestart ? ' (Scheduled Restart)' : ''}${isManuallyStopping ? ' (Manual Stop)' : ''}`);
+      addLog(streamId, `FFmpeg process exited with code ${code}`);
       removePid(streamId);
 
+      const current = activeStreams.get(streamId);
       if (current) {
-        if (current.autoStopTimeout) {
-          clearTimeout(current.autoStopTimeout);
-          current.autoStopTimeout = null;
-        }
-
-        // Only don't restart if it was a manual stop (clicked the button) or exit code 255
-        const shouldRestart = isScheduledRestart || (!isManuallyStopping && code !== 255 && streamConfig.autoRestart);
-
-        if (shouldRestart) {
-          current.status = 'Waiting'; // Explicitly set to Waiting
-
-          let delayMinutes = streamConfig.autoRestartDelayMinutes;
-          if (delayMinutes === 0) delayMinutes = 0.083; // ~5s
-          else if (!delayMinutes) delayMinutes = 0.166; // ~10s
-
-          const delaySeconds = Math.round(delayMinutes * 60);
-
-          if (isScheduledRestart) {
-            addLog(streamId, `Auto-Stop reached. Waiting ${delaySeconds}s for CPU cleanup before restart...`);
-          } else {
-            addLog(streamId, `Stream crashed/closed. Waiting ${delaySeconds}s to reconnect...`);
-          }
-
-          if (current.autoRestartTimeout) clearTimeout(current.autoRestartTimeout);
-
-          current.autoRestartTimeout = setTimeout(() => {
-            const nowStream = activeStreams.get(streamId);
-            if (nowStream) {
-              nowStream.autoRestartTimeout = null;
-              nowStream.isScheduledRestart = false;
-              nowStream.process = undefined as any; // Clear old reference
-              addLog(streamId, 'Restarting fresh FFmpeg process...');
-              startStream(streamId);
-            }
-          }, delayMinutes * 60000);
-        } else {
-          current.status = 'Stopped';
-          current.startTime = null;
-          current.process = undefined as any;
-          current.isScheduledRestart = false;
-          addLog(streamId, 'Stream stopped.');
-        }
+        current.status = (code === 0 || code === 255) ? 'Stopped' : 'Error';
+        current.startTime = null;
+        current.process = undefined as any;
+        addLog(streamId, `Stream stopped (Exit code: ${code})`);
       }
     });
 
@@ -295,26 +238,7 @@ export function startStream(streamId: string) {
       }
     });
 
-    // Auto-Stop Timer (Periodic Control)
-    if (streamConfig.autoStop && streamConfig.autoStopHours > 0) {
-      const ms = streamConfig.autoStopHours * 3600000;
-      const scheduledStop = new Date(Date.now() + ms);
-      const active = activeStreams.get(streamId);
-      if (active) active.scheduledStop = scheduledStop;
 
-      addLog(streamId, `Hard Auto-Stop scheduled in ${streamConfig.autoStopHours} hours (at ${scheduledStop.toLocaleTimeString()}).`);
-
-      activeStreams.get(streamId)!.autoStopTimeout = setTimeout(() => {
-        const current = activeStreams.get(streamId);
-        if (current && current.process) {
-          addLog(streamId, `Auto-stop timer reached (${streamConfig.autoStopHours}h). Triggering restart sequence...`);
-          current.isScheduledRestart = true;
-          killProcess(current.process.pid!);
-        } else {
-          addLog(streamId, `Auto-stop timer reached but no active process found.`);
-        }
-      }, ms);
-    }
 
     addLog(streamId, 'Stream process initialized.');
     return { success: true, message: 'Stream started successfully.' };
@@ -327,14 +251,10 @@ export function startStream(streamId: string) {
 
 export function stopStream(streamId: string) {
   const stream = activeStreams.get(streamId);
-  // Clear any restart timeouts regardless of whether process exists
-  if (stream && stream.autoRestartTimeout) clearTimeout(stream.autoRestartTimeout);
-
+  
   if (stream && stream.process) {
     const pid = stream.process.pid;
     addLog(streamId, `Stopping stream (PID ${pid})...`);
-    stream.isScheduledRestart = false;
-    stream.isManuallyStopping = true;
 
     if (pid && isProcessRunning(pid)) {
       killProcess(pid);
@@ -342,7 +262,6 @@ export function stopStream(streamId: string) {
 
     stream.status = 'Stopped';
     stream.startTime = null;
-    if (stream.autoStopTimeout) clearTimeout(stream.autoStopTimeout);
 
     removePid(streamId);
     return { success: true, message: 'Stream stopped successfully.' };
@@ -366,7 +285,6 @@ export function getStreamStatus() {
     statuses[stream.id] = {
       status: active ? active.status : 'Stopped',
       uptime: active && active.startTime ? Math.floor((new Date().getTime() - active.startTime.getTime()) / 1000) : 0,
-      scheduledStop: active ? active.scheduledStop : null,
       logs: active ? active.logs : [],
     };
   });
@@ -375,38 +293,4 @@ export function getStreamStatus() {
 }
 
 
-/**
- * Initialize all streams that have autoRestart enabled
- */
-export function initAutomatedStreams() {
-  const config = getConfig();
-  config.streams.forEach(stream => {
-    if (stream.autoRestart) {
-      const active = activeStreams.get(stream.id);
-      // Only start if not already running and no pending restart timeout
-      if (!active || (active.status === 'Stopped' && !active.autoRestartTimeout)) {
-        console.log(`[Stream] Startup/Watchdog: Ensuring stream ${stream.name} (${stream.id}) is running`);
-        startStream(stream.id);
-      }
-    }
-  });
-}
 
-// Global initialization and watchdog
-if (typeof global !== 'undefined') {
-  const G = global as any;
-  if (!G.streamWatchdogStarted) {
-    G.streamWatchdogStarted = true;
-
-    // Initial start after a short delay to allow system to initialize
-    setTimeout(() => {
-      console.log('[Stream] Running initial automation check...');
-      initAutomatedStreams();
-    }, 10000);
-
-    // Watchdog every 5 minutes to ensure auto-restart streams are alive
-    setInterval(() => {
-      initAutomatedStreams();
-    }, 300000);
-  }
-}

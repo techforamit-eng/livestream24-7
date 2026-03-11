@@ -14,10 +14,6 @@
       "name": "Nisha",
       "profileId": "03da3142-57f1-4975-8f92-c5ac3200303c",
       "resolution": "1080p",
-      "autoStop": false,
-      "autoStopHours": 1,
-      "autoRestart": true,
-      "autoRestartDelayMinutes": 5,
       "bitrate": "4000k",
       "fps": "60",
       "playlist": [

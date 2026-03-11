@@ -15,10 +15,6 @@ export interface StreamInstance {
   name: string; // Custom name for the stream (e.g. "Main Channel")
   profileId?: string; // ID referencing a StreamKeyProfile
   resolution: string; // '720p' | '1080p'
-  autoStop: boolean;
-  autoStopHours: number;
-  autoRestart: boolean;
-  autoRestartDelayMinutes: number;
   bitrate: string; // '2500k', '4000k'
   fps: string; // '30', '60'
   playlist: string[]; // array of filenames specific to this stream
@@ -39,10 +35,6 @@ const defaultConfig: AppConfig = {
       name: "Main Channel Live",
       profileId: undefined,
       resolution: '1080p',
-      autoStop: false,
-      autoStopHours: 1,
-      autoRestart: false,
-      autoRestartDelayMinutes: 5,
       bitrate: '4000k',
       fps: '60',
       playlist: [],
@@ -96,10 +88,6 @@ export function getConfig(): AppConfig {
           name: "Main Channel",
           profileId: newProfileId,
           resolution: parsed.resolution || '1080p',
-          autoStop: parsed.autoStop || false,
-          autoStopHours: parsed.autoStopHours || 1,
-          autoRestart: parsed.autoRestart || false,
-          autoRestartDelayMinutes: parsed.autoRestartDelayMinutes || 5,
           bitrate: parsed.bitrate || '4000k',
           fps: parsed.fps || '60',
           playlist: parsed.playlist || [],
