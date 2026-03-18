@@ -24,9 +24,10 @@ const RESOLUTION_MAP: Record<string, string> = {
 
 interface ActiveStream {
   process: ChildProcess;
-  status: 'Stopped' | 'Running' | 'Error' | 'Waiting';
+  status: 'Stopped' | 'Running' | 'Error' | 'Waiting' | 'Reconnecting';
   startTime: Date | null;
   logs: string[];
+  shouldRestart?: boolean;
 }
 
 const globalActiveStreams = (global as any).activeStreams || new Map<string, ActiveStream>();
@@ -183,6 +184,7 @@ export function startStream(streamId: string) {
     '-b:a', '128k',
     '-ar', '44100',
     '-f', 'flv',
+    '-fflags', '+genpts+igndts',
     '-flvflags', 'no_duration_filesize',
     outputUrl
   ];
@@ -203,12 +205,12 @@ export function startStream(streamId: string) {
 
     savePid(streamId, ffmpegProcess.pid);
 
-    // Initialize/Update stream state
     activeStreams.set(streamId, {
       process: ffmpegProcess,
       status: 'Running',
       startTime: new Date(),
       logs: stream ? stream.logs : [], // Preserve logs if restarting
+      shouldRestart: true,
     });
 
     ffmpegProcess.stderr?.on('data', (data: any) => {
@@ -222,10 +224,21 @@ export function startStream(streamId: string) {
 
       const current = activeStreams.get(streamId);
       if (current) {
-        current.status = (code === 0 || code === 255) ? 'Stopped' : 'Error';
-        current.startTime = null;
         current.process = undefined as any;
-        addLog(streamId, `Stream stopped (Exit code: ${code})`);
+        if (current.shouldRestart) {
+          current.status = 'Reconnecting';
+          addLog(streamId, `Stream unexpectedly stopped. Reconnecting in 5 seconds...`);
+          setTimeout(() => {
+            const checkStream = activeStreams.get(streamId);
+            if (checkStream && checkStream.shouldRestart) {
+              startStream(streamId);
+            }
+          }, 5000);
+        } else {
+          current.status = (code === 0 || code === 255) ? 'Stopped' : 'Error';
+          current.startTime = null;
+          addLog(streamId, `Stream stopped manually (Exit code: ${code})`);
+        }
       }
     });
 
@@ -252,6 +265,10 @@ export function startStream(streamId: string) {
 export function stopStream(streamId: string) {
   const stream = activeStreams.get(streamId);
   
+  if (stream) {
+    stream.shouldRestart = false;
+  }
+
   if (stream && stream.process) {
     const pid = stream.process.pid;
     addLog(streamId, `Stopping stream (PID ${pid})...`);
