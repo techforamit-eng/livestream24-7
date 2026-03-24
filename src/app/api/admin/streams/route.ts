@@ -6,10 +6,7 @@ import { startStream, stopStream } from '@/lib/stream';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'vmagic_secure_secret_key_123';
 
-// Import from global activeStreams
-function getActiveStreamsMap() {
-  return (global as any).activeStreams as Map<string, any> | undefined;
-}
+import { getStreamStatus } from '@/lib/stream';
 
 async function getCallerRole() {
   const cookieStore = await cookies();
@@ -31,10 +28,10 @@ export async function GET() {
   }
 
   const config = getConfig();
-  const activeMap = getActiveStreamsMap();
+  const statuses = getStreamStatus();
 
   const allStreams = config.streams.map(stream => {
-    const active = activeMap?.get(stream.id);
+    const live = statuses[stream.id];
     const profiles = (stream.profileIds || []).map(pid => config.streamKeys.find(k => k.id === pid)).filter(Boolean);
     const owner = config.users?.find(u => u.id === (stream.userId || 'admin'));
 
@@ -48,10 +45,8 @@ export async function GET() {
       fps: stream.fps,
       video: stream.video || 'None',
       profileName: profiles.length > 0 ? (profiles.length === 1 ? (profiles[0] as any).name : `${profiles.length} Destinations`) : 'Not configured',
-      status: active ? active.status : 'Stopped',
-      uptime: active && active.startTime
-        ? Math.floor((new Date().getTime() - new Date(active.startTime).getTime()) / 1000)
-        : 0,
+      status: live ? live.status : 'Stopped',
+      uptime: live ? live.uptime : 0,
     };
   });
 

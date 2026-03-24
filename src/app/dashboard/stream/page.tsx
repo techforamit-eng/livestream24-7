@@ -173,9 +173,12 @@ export default function StreamControl() {
                   <div className="flex items-center space-x-4">
                     <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${isRunning ? 'bg-green-500 text-green-500 animate-pulse' : 'bg-red-500 text-red-500'}`} />
                     <h3 className="text-xl font-bold text-white">{streamDef.name}</h3>
-                    <span className={`text-xs px-2 py-1 rounded-md font-bold uppercase tracking-wider ${isRunning ? 'bg-green-500/10 text-green-500' : 'bg-gray-800 text-gray-400'}`}>
-                      {currentStatus.status}
-                    </span>
+                    {isRunning && (
+                      <span className="text-[10px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-md font-black tracking-tighter border border-green-500/20">RUNNING</span>
+                    )}
+                    {!isRunning && currentStatus.status !== 'Stopped' && (
+                      <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-md font-black tracking-tighter border border-amber-500/20 uppercase">{currentStatus.status}</span>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
@@ -236,8 +239,8 @@ export default function StreamControl() {
                           : 'bg-gray-900 border-gray-800 hover:bg-green-600 hover:border-green-500 text-gray-400 hover:text-white disabled:opacity-50'
                           }`}
                       >
-                        <Play className={`w-6 h-6 transition-transform ${isRunning ? 'scale-110 animate-pulse fill-current' : 'group-hover:scale-110'}`} />
-                        <span className="text-xs font-bold uppercase tracking-tight">
+                        <Play className={`w-8 h-8 transition-transform mb-1 ${isRunning ? 'scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] fill-current' : 'group-hover:scale-110'}`} />
+                        <span className="text-[11px] font-black uppercase tracking-widest">
                           {isRunning ? 'Running' : 'Start'}
                         </span>
                       </button>

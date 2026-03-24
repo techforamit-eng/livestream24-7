@@ -30,11 +30,12 @@ interface ActiveStream {
   shouldRestart?: boolean;
 }
 
-const globalActiveStreams = (global as any).activeStreams || new Map<string, ActiveStream>();
+export const activeStreams: Map<string, ActiveStream> = (global as any).activeStreams || new Map<string, ActiveStream>();
 if (process.env.NODE_ENV !== 'production') {
-  (global as any).activeStreams = globalActiveStreams;
+  (global as any).activeStreams = activeStreams;
 }
-const activeStreams: Map<string, ActiveStream> = globalActiveStreams;
+// For some reason if Next.js clears the global, let's ensure it's at least once there
+(global as any).activeStreams = activeStreams;
 
 // Track PIDs for cross-restart cleanup
 const PIDS_FILE = path.join(process.cwd(), 'active_pids.json');
@@ -141,7 +142,7 @@ export function startStream(streamId: string) {
   const role = streamConfig.userId || 'admin';
   const videoFile = streamConfig.video.replace(/'/g, "'\\''");
   const videoPath = path.join(VIDEOS_DIR, role, videoFile).replace(/\\/g, '/');
-  
+
   if (!fs.existsSync(path.join(VIDEOS_DIR, role, streamConfig.video))) {
     return { success: false, message: 'Video file not found on disk.' };
   }
@@ -163,14 +164,15 @@ export function startStream(streamId: string) {
     const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
     outputUrl = `${rtmpUrl}${streamKey}`;
   } else {
-    // Tee muxer syntax: [f=flv]rtmp://...|[f=flv]rtmp://...
+    // Tee muxer syntax: [f=flv:flvflags=no_duration_filesize]rtmp://...|[f=flv:flvflags=no_duration_filesize]rtmp://...
     outputFormat = 'tee';
     outputUrl = profiles.map(p => {
       const streamKey = p!.streamKey.trim();
       const rawRtmpUrl = p!.youtubeRtmpUrl.trim();
       const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
       const fullUrl = `${rtmpUrl}${streamKey}`;
-      return `[f=flv]${fullUrl}`;
+      // Note: we move flvflags inside the tee outputs
+      return `[f=flv:flvflags=no_duration_filesize+genpts+igndts]${fullUrl}`;
     }).join('|');
   }
 
@@ -198,10 +200,11 @@ export function startStream(streamId: string) {
 
   if (outputFormat === 'tee') {
     args.push('-map', '0:v', '-map', '0:a');
+  } else {
+    args.push('-fflags', '+genpts+igndts');
+    args.push('-flvflags', 'no_duration_filesize');
   }
 
-  args.push('-fflags', '+genpts+igndts');
-  args.push('-flvflags', 'no_duration_filesize');
   args.push(outputUrl);
 
   try {
@@ -279,7 +282,7 @@ export function startStream(streamId: string) {
 
 export function stopStream(streamId: string) {
   const stream = activeStreams.get(streamId);
-  
+
   if (stream) {
     stream.shouldRestart = false;
   }
