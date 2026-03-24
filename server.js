@@ -8,6 +8,21 @@ const next = require('next');
 const Busboy = require('busboy');
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'vmagic_secure_secret_key_123';
+
+function getUserRole(req) {
+  const cookieHeader = req.headers.cookie || '';
+  const match = cookieHeader.match(/auth-token=([^;]+)/);
+  if (!match) return 'admin';
+  try {
+    const decoded = jwt.verify(match[1], JWT_SECRET);
+    return decoded.role || 'admin';
+  } catch (e) {
+    return 'admin';
+  }
+}
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOST || '0.0.0.0';
@@ -29,6 +44,12 @@ function formatSize(bytes) {
 }
 
 function handleVideoUpload(req, res) {
+  const role = getUserRole(req);
+  const userVideosDir = path.join(VIDEOS_DIR, role);
+  if (!fs.existsSync(userVideosDir)) {
+    fs.mkdirSync(userVideosDir, { recursive: true });
+  }
+
   const contentType = req.headers['content-type'] || '';
   if (!contentType.includes('multipart/form-data')) {
     res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -63,7 +84,7 @@ function handleVideoUpload(req, res) {
       return;
     }
 
-    const destPath = path.join(VIDEOS_DIR, safeName);
+    const destPath = path.join(userVideosDir, safeName);
 
     // For first chunk or non-chunked, we overwrite/create. Otherwise we append.
     const writeFlag = (isChunked && chunkIndex > 0) ? 'a' : 'w';

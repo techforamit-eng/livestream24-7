@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 export default function StreamControl() {
   const [statuses, setStatuses] = useState<any>({});
   const [config, setConfig] = useState<AppConfig | null>(null);
+  const [userRole, setUserRole] = useState<string>('admin');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Record<string, string>>({});
 
@@ -29,6 +30,7 @@ export default function StreamControl() {
       const res = await fetch('/api/config');
       const data = await res.json();
       setConfig(data);
+      if (data.userRole) setUserRole(data.userRole);
     } catch (err) { }
   };
 
@@ -79,7 +81,7 @@ export default function StreamControl() {
       resolution: '1080p',
       bitrate: '4000k',
       fps: '60',
-      playlist: [],
+      video: '',
     };
     setEditingStream(newStream);
     setIsCreating(true);
@@ -124,13 +126,9 @@ export default function StreamControl() {
     });
   };
 
-  const toggleVideoInPlaylist = (videoName: string) => {
+  const selectVideo = (videoName: string) => {
     if (!editingStream) return;
-    const list = editingStream.playlist || [];
-    const newPlaylist = list.includes(videoName)
-      ? list.filter(n => n !== videoName)
-      : [...list, videoName];
-    setEditingStream({ ...editingStream, playlist: newPlaylist });
+    setEditingStream({ ...editingStream, video: videoName });
   };
 
   const InputLabel = ({ children, icon: Icon }: any) => (
@@ -218,21 +216,21 @@ export default function StreamControl() {
                       </div>
 
                       <div className="flex justify-between pb-2 items-center">
-                        <span className="text-gray-500 text-sm">Playlist Length</span>
-                        <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${streamDef.playlist.length === 0 ? 'bg-red-500/20 text-red-500' : 'bg-gray-800 text-gray-200'}`}>{streamDef.playlist.length} Videos</span>
+                        <span className="text-gray-500 text-sm">Active Video</span>
+                        <span className={`text-sm font-medium px-2 py-0.5 rounded-lg truncate max-w-[150px] ${!streamDef.video ? 'bg-red-500/20 text-red-500' : 'bg-gray-800 text-gray-200'}`}>{streamDef.video || 'None Selected'}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Controls Column */}
                   <div className="p-6 flex flex-col justify-center">
-                    {streamDef.playlist.length === 0 && (
-                      <div className="text-xs text-red-500 mb-3 font-semibold text-center border-b border-red-500/20 pb-2">Cannot start without videos in playlist. Click Configure.</div>
+                    {!streamDef.video && (
+                      <div className="text-xs text-red-500 mb-3 font-semibold text-center border-b border-red-500/20 pb-2">Cannot start without a video selected. Click Configure.</div>
                     )}
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => handleAction(streamDef.id, 'start')}
-                        disabled={loading || isRunning || streamDef.playlist.length === 0}
+                        disabled={loading || isRunning || !streamDef.video}
                         className={`flex flex-col items-center justify-center space-y-2 border rounded-xl transition-all group py-4 ${isRunning
                           ? 'bg-green-600 border-green-500 text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] opacity-100'
                           : 'bg-gray-900 border-gray-800 hover:bg-green-600 hover:border-green-500 text-gray-400 hover:text-white disabled:opacity-50'
@@ -407,12 +405,12 @@ export default function StreamControl() {
                 <div className="flex flex-col h-full space-y-4">
                   <div className="bg-[#111] p-6 rounded-2xl border border-gray-800 flex-1 flex flex-col min-h-[400px]">
                     <h3 className="text-white font-semibold flex items-center justify-between mb-4 pb-2 border-b border-gray-800">
-                      <span className="flex items-center"><Video className="w-4 h-4 mr-2 text-red-500" /> Playlist Generator</span>
-                      <span className="bg-red-500/20 text-red-500 px-2 py-0.5 rounded-full text-xs">{editingStream.playlist.length} items</span>
+                      <span className="flex items-center"><Video className="w-4 h-4 mr-2 text-red-500" /> Source Video</span>
+                      <span className="bg-red-500/20 text-red-500 px-2 py-0.5 rounded-full text-xs">{editingStream.video ? 'Selected' : 'None'}</span>
                     </h3>
 
                     <div className="text-sm text-gray-500 mb-4 bg-gray-900 p-3 rounded-lg border border-gray-800 flex items-start">
-                      Select the videos from your Cloud Database below that you wish to pipe into this stream process. They will loop continually.
+                      Select the video from your Cloud Database below that you wish to pipe into this stream process. It will loop continually.
                     </div>
 
                     <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
@@ -420,14 +418,15 @@ export default function StreamControl() {
                         <div className="text-center text-gray-500 italic py-10 text-sm">No videos found. Upload some via the File Manager first.</div>
                       ) : (
                         videos.map(vid => {
-                          const isSelected = editingStream.playlist.includes(vid.name);
+                          const isSelected = editingStream.video === vid.name;
                           return (
                             <label key={vid.name} className={`flex items-center space-x-3 p-3 rounded-xl border cursor-pointer transition-colors ${isSelected ? 'bg-red-500/10 border-red-500/50' : 'bg-[#1a1a1a] border-gray-800 hover:bg-gray-900'} `}>
                               <input
-                                type="checkbox"
+                                type="radio"
+                                name="sourceVideo"
                                 className="w-5 h-5 accent-red-600 shrink-0"
                                 checked={isSelected}
-                                onChange={() => toggleVideoInPlaylist(vid.name)}
+                                onChange={() => selectVideo(vid.name)}
                               />
                               <div className="flex items-center space-x-2 overflow-hidden flex-1">
                                 <Video className={`w-4 h-4 shrink-0 ${isSelected ? 'text-red-500' : 'text-gray-600'}`} />
@@ -450,8 +449,8 @@ export default function StreamControl() {
                         })
                       )}
                     </div>
-                    {editingStream.playlist.length === 0 && (
-                      <div className="mt-4 text-xs font-semibold text-red-500 text-center animate-pulse">Warning: Stream cannot start without at least 1 video selected.</div>
+                    {!editingStream.video && (
+                      <div className="mt-4 text-xs font-semibold text-red-500 text-center animate-pulse">Warning: Stream cannot start without a source video selected.</div>
                     )}
                   </div>
                 </div>
@@ -500,7 +499,7 @@ export default function StreamControl() {
               {/* Video Tag */}
               <div className="aspect-video bg-black flex items-center justify-center">
                 <video
-                  src={`/videos/${playingVideo}`}
+                  src={`/videos/${userRole}/${playingVideo}`}
                   controls
                   autoPlay
                   className="w-full h-full max-h-[70vh]"

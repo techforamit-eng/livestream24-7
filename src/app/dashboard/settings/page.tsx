@@ -90,29 +90,31 @@ export default function SettingsPage() {
 
       <form onSubmit={handleSave} className="space-y-6">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-          <div className="bg-[#161616] border border-gray-800 rounded-3xl p-8 shadow-2xl">
-            <h3 className="text-xl font-semibold text-white mb-6 border-b border-gray-800 pb-3 flex items-center">
-              <Lock className="w-6 h-6 mr-3 text-red-500" /> User Security
-            </h3>
-            <div className="max-w-md">
-              <InputLabel icon={Lock}>Update Admin Password</InputLabel>
-              <div className="relative">
-                <input
-                  type={showAdminPass ? "text" : "password"}
-                  placeholder="Leave blank to keep unchanged"
-                  onChange={e => updateGlobal('newPassword', e.target.value)}
-                  className="w-full bg-[#1a1a1a] text-white px-4 py-3 pr-12 rounded-xl border border-gray-800 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAdminPass(!showAdminPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors p-1"
-                >
-                  {showAdminPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+          {config.userRole === 'admin' && (
+            <div className="bg-[#161616] border border-gray-800 rounded-3xl p-8 shadow-2xl">
+              <h3 className="text-xl font-semibold text-white mb-6 border-b border-gray-800 pb-3 flex items-center">
+                <Lock className="w-6 h-6 mr-3 text-red-500" /> User Security
+              </h3>
+              <div className="max-w-md">
+                <InputLabel icon={Lock}>Update Admin Password</InputLabel>
+                <div className="relative">
+                  <input
+                    type={showAdminPass ? "text" : "password"}
+                    placeholder="Leave blank to keep unchanged"
+                    onChange={e => updateGlobal('newPassword', e.target.value)}
+                    className="w-full bg-[#1a1a1a] text-white px-4 py-3 pr-12 rounded-xl border border-gray-800 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPass(!showAdminPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors p-1"
+                  >
+                    {showAdminPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="bg-[#161616] border border-gray-800 rounded-3xl p-8 shadow-2xl">
             <div className="mb-6 border-b border-gray-800 pb-3 flex items-center justify-between">

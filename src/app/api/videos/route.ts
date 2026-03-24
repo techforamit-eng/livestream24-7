@@ -1,17 +1,37 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 
-const VIDEOS_DIR = path.join(process.cwd(), 'public', 'videos');
+const JWT_SECRET = process.env.JWT_SECRET || 'vmagic_secure_secret_key_123';
 
-if (!fs.existsSync(VIDEOS_DIR)) {
-  fs.mkdirSync(VIDEOS_DIR, { recursive: true });
+async function getUserRole() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('auth-token')?.value;
+  if (!token) return 'admin'; // Fallback
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { role: string };
+    return decoded.role || 'admin';
+  } catch (err) {
+    return 'admin';
+  }
+}
+
+function getVideosDir(role: string) {
+  const dir = path.join(process.cwd(), 'public', 'videos', role);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
 }
 
 // POST is handled by server.js directly to bypass Next.js body limits
 
 export async function GET() {
   try {
+    const role = await getUserRole();
+    const VIDEOS_DIR = getVideosDir(role);
     const files = fs.readdirSync(VIDEOS_DIR).filter(file => file.endsWith('.mp4'));
     const videos = files.map(file => {
       const stat = fs.statSync(path.join(VIDEOS_DIR, file));
@@ -43,6 +63,9 @@ export async function GET() {
 
 export async function DELETE(req: Request) {
   try {
+    const role = await getUserRole();
+    const VIDEOS_DIR = getVideosDir(role);
+
     const { filename } = await req.json();
     if (!filename) {
       return NextResponse.json({ success: false, message: 'Filename required' }, { status: 400 });
@@ -62,6 +85,9 @@ export async function DELETE(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
+    const role = await getUserRole();
+    const VIDEOS_DIR = getVideosDir(role);
+
     const { oldName, newName } = await req.json();
 
     if (!oldName || !newName) {
@@ -89,9 +115,9 @@ export async function PATCH(req: Request) {
     const config = getConfig();
     let changed = false;
     const updatedStreams = config.streams.map(stream => {
-      if (stream.playlist.includes(oldName)) {
+      if (stream.video === oldName) {
         changed = true;
-        return { ...stream, playlist: stream.playlist.map(v => v === oldName ? safeName : v) };
+        return { ...stream, video: safeName };
       }
       return stream;
     });

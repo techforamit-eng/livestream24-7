@@ -1,25 +1,72 @@
 {
-  "adminPassHash": "$2b$10$Ka3CmVQ.Iez0m1/qvTYVLePJV/cca6e93hYelo5Y9UCajApeIWTWW",
+  "adminPassHash": "$2b$10$4BKT.kCaV91NwZG98BlBM.i3k2KkcQkcyHDI9azCOlLs.etvAQsjK",
+  "users": [
+    {
+      "id": "admin",
+      "username": "admin",
+      "passwordHash": "$2b$10$4BKT.kCaV91NwZG98BlBM.i3k2KkcQkcyHDI9azCOlLs.etvAQsjK"
+    },
+    {
+      "id": "user2",
+      "username": "user2",
+      "passwordHash": "$2b$10$dUCCEgNOzjLa7FvzOFKjHu8mHwYtWLuivD3gTCa7BkyGLZg1Xd9Z6"
+    },
+    {
+      "id": "test",
+      "username": "test",
+      "passwordHash": "$2b$10$S6V6ymOjceprPkxNYvbHCex0qSf8MrAx7arC06z2TmBwDD/hdvisq"
+    },
+    {
+      "id": "user",
+      "username": "test2",
+      "passwordHash": "$2b$10$681LqM12aEcbQ33RaplUS.GRCAae7Qig8sZFwHCssArsBuwxCZkn6"
+    }
+  ],
   "streamKeys": [
     {
       "id": "03da3142-57f1-4975-8f92-c5ac3200303c",
+      "userId": "admin",
       "name": "Nisha Upadhyay",
       "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
       "streamKey": "he7r-wvr4-u82c-ks7u-bj0t"
+    },
+    {
+      "id": "a73f75bc-49b0-490a-bdd5-ac9959e09e1f",
+      "name": "Nisha Upadhyay",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "he7r-wvr4-u82c-ks7u-bj0t",
+      "userId": "user"
+    },
+    {
+      "id": "06bdb301-1490-4466-af5b-b710ea747482",
+      "name": "test2",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "",
+      "userId": "user"
     }
   ],
   "streams": [
     {
       "id": "587daecb-c05e-4d9c-b0bc-e9768017fe22",
+      "userId": "admin",
       "name": "Nisha",
       "profileId": "03da3142-57f1-4975-8f92-c5ac3200303c",
       "resolution": "1080p",
       "bitrate": "4000k",
       "fps": "60",
-      "playlist": [
-        "heyrishu.mp4",
-        "Hili Na Kamariya (1).mp4"
-      ]
+      "video": "heyrishu.mp4"
+    },
+    {
+      "id": "49e8b27b-7f83-478e-bf77-0585c1993b5a",
+      "name": "Stream 1",
+      "profileId": "a73f75bc-49b0-490a-bdd5-ac9959e09e1f",
+      "resolution": "1080p",
+      "bitrate": "4000k",
+      "fps": "60",
+      "video": "heyrishu.mp4",
+      "userId": "user"
     }
-  ]
+  ],
+  "userRole": "user",
+  "isImpersonating": false
 }

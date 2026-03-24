@@ -5,6 +5,7 @@ const DATA_FILE = path.join(process.cwd(), 'data.json');
 
 export interface StreamKeyProfile {
   id: string;
+  userId?: string; // Optional for backward compatibility, denotes the user who owns this
   name: string; // e.g. "Gaming Channel", "Tech Channel"
   youtubeRtmpUrl: string;
   streamKey: string;
@@ -12,22 +13,35 @@ export interface StreamKeyProfile {
 
 export interface StreamInstance {
   id: string; // Unique ID for the stream process
+  userId?: string; // Optional for backward compatibility, denotes the user who owns this
   name: string; // Custom name for the stream (e.g. "Main Channel")
   profileId?: string; // ID referencing a StreamKeyProfile
   resolution: string; // '720p' | '1080p'
   bitrate: string; // '2500k', '4000k'
   fps: string; // '30', '60'
-  playlist: string[]; // array of filenames specific to this stream
+  video?: string; // single filename specifically for this stream
+}
+
+export interface UserProfile {
+  id: string; // Also serves as the role and directory name (e.g. 'admin', 'user2', 'user_id')
+  username: string;
+  passwordHash: string;
 }
 
 export interface AppConfig {
   adminPassHash: string;
+  userRole?: string;
+  users?: UserProfile[];
   streamKeys: StreamKeyProfile[];
   streams: StreamInstance[];
 }
 
 const defaultConfig: AppConfig = {
   adminPassHash: '$2b$10$4BKT.kCaV91NwZG98BlBM.i3k2KkcQkcyHDI9azCOlLs.etvAQsjK', // bcrypt hash for 'admin'
+  users: [
+    { id: 'admin', username: 'admin', passwordHash: '$2b$10$4BKT.kCaV91NwZG98BlBM.i3k2KkcQkcyHDI9azCOlLs.etvAQsjK' },
+    { id: 'user2', username: 'user2', passwordHash: '$2b$10$wO9nQ85S1eO2/kK3H.Q2pufN7qT2K.w5WlQo.4iI1sX0A9A8C7wY2' } // hash for Sonuvmagic@8858
+  ],
   streamKeys: [],
   streams: [
     {
@@ -37,7 +51,7 @@ const defaultConfig: AppConfig = {
       resolution: '1080p',
       bitrate: '4000k',
       fps: '60',
-      playlist: [],
+      video: '',
     }
   ]
 };
@@ -90,7 +104,7 @@ export function getConfig(): AppConfig {
           resolution: parsed.resolution || '1080p',
           bitrate: parsed.bitrate || '4000k',
           fps: parsed.fps || '60',
-          playlist: parsed.playlist || [],
+          video: parsed.playlist?.[0] || '',
         }]
       };
       fs.writeFileSync(DATA_FILE, JSON.stringify(migrated, null, 2));
@@ -100,6 +114,15 @@ export function getConfig(): AppConfig {
     // Ensure streamKeys exists
     if (!parsed.streamKeys) parsed.streamKeys = [];
     
+    // Ensure users array exists
+    if (!parsed.users || parsed.users.length === 0) {
+      parsed.users = [
+        { id: 'admin', username: 'admin', passwordHash: parsed.adminPassHash || defaultConfig.adminPassHash },
+        // Pre-create user2 for backward compatibility if we are migrating
+        { id: 'user2', username: 'user2', passwordHash: '$2b$10$n4O0Hl.33kP.A9Bw00D.kOYf.1t5E.v8R7X/S2wYw0b4q4pY5tNlK' } // This is just a fallback valid hash
+      ];
+    }
+
     return { ...defaultConfig, ...parsed };
   } catch (e) {
     return defaultConfig;

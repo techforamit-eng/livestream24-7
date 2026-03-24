@@ -136,19 +136,18 @@ export function startStream(streamId: string) {
     return { success: false, message: 'Stream Profile (URL/Key) is not selected or configured.' };
   }
 
-  if (streamConfig.playlist.length === 0) {
-    return { success: false, message: 'Playlist is empty. Add videos first.' };
+  if (!streamConfig.video) {
+    return { success: false, message: 'No video selected. Please select a video first.' };
   }
 
-  // 1. Create Playlist File
-  const playlistFile = path.join(PLAYLISTS_DIR, `playlist_${streamId}.txt`);
-  const fileLines = streamConfig.playlist.map((video: string) => {
-    // Escape single quotes for FFmpeg concat format
-    const escapedVideo = video.replace(/'/g, "'\\''");
-    const absolutePath = path.join(VIDEOS_DIR, escapedVideo).replace(/\\/g, '/');
-    return `file '${absolutePath}'`;
-  });
-  fs.writeFileSync(playlistFile, fileLines.join('\n'));
+  // 1. Prepare Video Path
+  const role = streamConfig.userId || 'admin';
+  const videoFile = streamConfig.video.replace(/'/g, "'\\''");
+  const videoPath = path.join(VIDEOS_DIR, role, videoFile).replace(/\\/g, '/');
+  
+  if (!fs.existsSync(path.join(VIDEOS_DIR, role, streamConfig.video))) {
+    return { success: false, message: 'Video file not found on disk.' };
+  }
 
   // 2. Prepare Variables
   const bitrate = (streamConfig.bitrate || '4000k').toString().replace('k', '');
@@ -167,9 +166,7 @@ export function startStream(streamId: string) {
     '-loglevel', 'info',
     '-re',
     '-stream_loop', '-1',
-    '-f', 'concat',
-    '-safe', '0',
-    '-i', playlistFile,
+    '-i', videoPath,
     '-vf', `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,format=yuv420p`,
     '-r', fps,
     '-c:v', 'libx264',

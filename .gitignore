@@ -41,6 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 # Large files & dynamic content
-/public/videos/*.mp4
+/public/videos/**/*.mp4
+/public/playlists/**/*.txt
 /public/playlists/*.txt
+/public/videos/*.mp4
 /*.js.map

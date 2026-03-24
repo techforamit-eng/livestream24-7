@@ -20,7 +20,16 @@ export default function FilesDB() {
   const [renameValue, setRenameValue] = useState('');
   const [renameError, setRenameError] = useState('');
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string>('admin');
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchConfig = async () => {
+    try {
+      const res = await fetch('/api/config');
+      const data = await res.json();
+      if (data.userRole) setUserRole(data.userRole);
+    } catch (err) { }
+  };
 
   const fetchVideos = async () => {
     try {
@@ -34,6 +43,7 @@ export default function FilesDB() {
   };
 
   useEffect(() => {
+    fetchConfig();
     fetchVideos();
   }, []);
 
@@ -405,7 +415,7 @@ export default function FilesDB() {
               {/* Video Tag */}
               <div className="aspect-video bg-black flex items-center justify-center">
                 <video
-                  src={`/videos/${playingVideo}`}
+                  src={`/videos/${userRole}/${playingVideo}`}
                   controls
                   autoPlay
                   className="w-full h-full max-h-[70vh]"
