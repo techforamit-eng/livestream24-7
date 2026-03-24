@@ -320,6 +320,7 @@ export function getStreamStatus() {
     statuses[stream.id] = {
       status: active ? active.status : 'Stopped',
       uptime: active && active.startTime ? Math.floor((new Date().getTime() - active.startTime.getTime()) / 1000) : 0,
+      userId: stream.userId || 'admin',
       logs: active ? active.logs : [],
     };
   });
