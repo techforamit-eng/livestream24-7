@@ -13,6 +13,7 @@ interface SysStats {
     uptime: number;
     userId: string;
   }>;
+  currentUserId: string;
 }
 
 function formatUptime(seconds: number) {
@@ -51,8 +52,10 @@ export default function DashboardOverview() {
     );
   }
 
-  const activeStreamsCount = Object.values(stats.stream || {}).filter(s => s.status === 'Running').length;
-  const totalStreamsCount = Object.keys(stats.stream || {}).length;
+  const activeStreamsCount = Object.values(stats.stream || {})
+    .filter(s => s.userId === stats.currentUserId && s.status === 'Running').length;
+  const totalStreamsCount = Object.values(stats.stream || {})
+    .filter(s => s.userId === stats.currentUserId).length;
 
   // Group by userId
   const userStats: Record<string, { active: number; total: number }> = {};
@@ -130,49 +133,10 @@ export default function DashboardOverview() {
               <h3 className={`text-2xl font-bold ${item.title === 'Active Streams' ? item.color : 'text-white'}`}>
                 {item.value}
               </h3>
-              <p className="text-gray-500 text-xs mt-1">{item.sub}</p>
+              <p className="text-gray-500 text-xs mt-1 capitalize">{item.sub}</p>
             </div>
           </motion.div>
         ))}
-      </div>
-
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold text-white mb-4">Streams by User</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Object.entries(userStats).map(([userId, userStat], idx) => (
-            <motion.div
-              key={userId}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: idx * 0.05 }}
-              className="p-4 bg-[#1e1e1e] border border-gray-800 rounded-xl"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-300 font-medium capitalize">{userId}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${userStat.active > 0 ? 'bg-green-500/20 text-green-500' : 'bg-gray-700 text-gray-400'}`}>
-                  {userStat.active > 0 ? 'Active' : 'Idle'}
-                </span>
-              </div>
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-white">{userStat.active}</div>
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">Active Streams</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-semibold text-gray-400">{userStat.total}</div>
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">Total</div>
-                </div>
-              </div>
-              {/* Simple progress bar */}
-              <div className="w-full bg-gray-800 h-1.5 rounded-full mt-3 overflow-hidden">
-                <div
-                  className="bg-green-500 h-full transition-all duration-500"
-                  style={{ width: `${(userStat.active / userStat.total) * 100}%` }}
-                />
-              </div>
-            </motion.div>
-          ))}
-        </div>
       </div>
     </div>
   );

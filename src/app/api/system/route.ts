@@ -1,9 +1,24 @@
 import { NextResponse } from 'next/server';
 import si from 'systeminformation';
 import { getStreamStatus } from '@/lib/stream';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'vmagic_secure_secret_key_123';
 
 export async function GET() {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth-token')?.value;
+    let currentUserId = 'admin';
+
+    if (token) {
+      try {
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+        currentUserId = decoded.role;
+      } catch (e) { }
+    }
+
     const [cpu, mem, fsSize, networkStats] = await Promise.all([
       si.currentLoad(),
       si.mem(),
@@ -33,7 +48,8 @@ export async function GET() {
         rx: netRx.toFixed(2),
         tx: netTx.toFixed(2)
       },
-      stream
+      stream,
+      currentUserId
     });
   } catch (err) {
     return NextResponse.json({ error: 'Failed to fetch sysinfo' }, { status: 500 });
