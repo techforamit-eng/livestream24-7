@@ -57,15 +57,24 @@ export async function POST(req: Request) {
     const session = await getUserSession();
     const role = session.role;
 
-    if (data.newPassword && role === 'admin') {
-      const bcrypt = require('bcryptjs');
-      data.adminPassHash = await bcrypt.hash(data.newPassword, 10);
-      delete data.newPassword;
-    } else if (data.newPassword) {
-      delete data.newPassword; // Ignore for non-admins
-    }
-
     const currentConfig = getConfig();
+    if (data.newPassword) {
+      const bcrypt = require('bcryptjs');
+      const hashed = await bcrypt.hash(data.newPassword, 10);
+
+      // Update global admin pass for backward compatibility
+      if (role === 'admin') {
+        data.adminPassHash = hashed;
+      }
+
+      // Update specific user in the users array
+      if (currentConfig.users) {
+        data.users = currentConfig.users.map((u: any) =>
+          u.id === role ? { ...u, passwordHash: hashed } : u
+        );
+      }
+      delete data.newPassword;
+    }
 
     // Merge streams
     if (data.streams) {

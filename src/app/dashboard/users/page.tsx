@@ -77,8 +77,12 @@ export default function UserManagePage() {
 
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserId || !newUsername || !newPassword) {
-      showError('All fields (ID, Username, Password) are required.');
+    if (isCreating && (!newUserId || !newUsername || !newPassword)) {
+      showError('All fields (ID, Username, Password) are required for new users.');
+      return;
+    }
+    if (!isCreating && (!newUsername)) {
+      showError('Username is required.');
       return;
     }
 
@@ -308,10 +312,9 @@ export default function UserManagePage() {
                 <InputLabel icon={KeyRound}>{isCreating ? 'Password' : 'New Password'}</InputLabel>
                 <input
                   type="password"
-                  placeholder={isCreating ? "Set a strong password" : "Enter new password to overwrite existing"}
+                  placeholder={isCreating ? "Set initial password" : "Enter to reset password (leave blank to keep current)"}
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  required
                   className="w-full bg-[#1a1a1a] text-white px-4 py-3 rounded-xl border border-gray-800 focus:border-red-500 outline-none transition-all placeholder:text-gray-700 text-sm"
                 />
               </div>
@@ -322,7 +325,7 @@ export default function UserManagePage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={actionLoading || !newUserId || !newUsername || !newPassword}
+                  disabled={actionLoading || !newUserId || !newUsername || (isCreating && !newPassword)}
                   className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(220,38,38,0.3)]"
                 >
                   <Save className="w-4 h-4" />

@@ -34,25 +34,37 @@ export async function POST(req: Request) {
 
   const { id, username, newPassword } = await req.json();
 
-  if (!id || !username || !newPassword) {
-    return NextResponse.json({ success: false, message: 'All fields are required' }, { status: 400 });
+  if (!id || !username) {
+    return NextResponse.json({ success: false, message: 'ID and Username are required' }, { status: 400 });
   }
 
   const config = getConfig();
   let users = config.users || [];
 
   const existingUserIndex = users.findIndex(u => u.id === id);
-  const passwordHash = await bcrypt.hash(newPassword, 10);
 
   if (existingUserIndex >= 0) {
     // Update existing user
-    users[existingUserIndex] = { ...users[existingUserIndex], username, passwordHash };
+    const updatedUser = { ...users[existingUserIndex], username };
+    if (newPassword) {
+      updatedUser.passwordHash = await bcrypt.hash(newPassword, 10);
+      
+      // If updating the admin user's password, also update the legacy field
+      if (id === 'admin') {
+        config.adminPassHash = updatedUser.passwordHash;
+      }
+    }
+    users[existingUserIndex] = updatedUser;
   } else {
+    if (!newPassword) {
+      return NextResponse.json({ success: false, message: 'Password is required for new users' }, { status: 400 });
+    }
     // Check if ID is somewhat safe
     const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '');
     if (!safeId) {
       return NextResponse.json({ success: false, message: 'Invalid User ID format' }, { status: 400 });
     }
+    const passwordHash = await bcrypt.hash(newPassword, 10);
     // Create new
     users.push({ id: safeId, username, passwordHash });
   }
