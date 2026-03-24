@@ -61,9 +61,22 @@ export default function ManageStreamsPage() {
 
   useEffect(() => {
     fetchStreams();
-    const interval = setInterval(fetchStreams, 4000);
+    const interval = setInterval(fetchStreams, 3000);
     return () => clearInterval(interval);
   }, [fetchStreams]);
+
+  // Local uptime incrementer for smooth real-time display
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setStreams(prev => prev.map(s => {
+        if (s.status === 'Running') {
+          return { ...s, uptime: s.uptime + 1 };
+        }
+        return s;
+      }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleAction = async (streamId: string, action: 'start' | 'stop') => {
     setActionLoading(prev => ({ ...prev, [streamId]: true }));
@@ -180,6 +193,9 @@ export default function ManageStreamsPage() {
                           stream.status === 'Error' ? 'bg-red-500 text-red-500' :
                             'bg-gray-600 text-gray-600'
                         }`} />
+                      {isRunning && (
+                        <Activity className="w-4 h-4 text-green-500 animate-[pulse_1.5s_infinite]" />
+                      )}
                       <div>
                         <h3 className="text-white font-bold text-lg leading-tight">{stream.name}</h3>
                         <div className="flex items-center space-x-2 mt-0.5">
