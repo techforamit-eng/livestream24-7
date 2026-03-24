@@ -171,8 +171,8 @@ export function startStream(streamId: string) {
       const rawRtmpUrl = p!.youtubeRtmpUrl.trim();
       const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
       const fullUrl = `${rtmpUrl}${streamKey}`;
-      // Note: we move flvflags inside the tee outputs
-      return `[f=flv:flvflags=no_duration_filesize+genpts+igndts]${fullUrl}`;
+      // Use simpler flvflags for internal muxer
+      return `[f=flv:flvflags=no_duration_filesize]${fullUrl}`;
     }).join('|');
   }
 
@@ -181,6 +181,7 @@ export function startStream(streamId: string) {
     '-loglevel', 'info',
     '-re',
     '-stream_loop', '-1',
+    '-fflags', '+genpts+igndts', // Move back to global
     '-i', videoPath,
     '-vf', `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,format=yuv420p`,
     '-r', fps,
@@ -201,7 +202,6 @@ export function startStream(streamId: string) {
   if (outputFormat === 'tee') {
     args.push('-map', '0:v', '-map', '0:a');
   } else {
-    args.push('-fflags', '+genpts+igndts');
     args.push('-flvflags', 'no_duration_filesize');
   }
 
