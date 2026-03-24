@@ -15,7 +15,7 @@ export interface StreamInstance {
   id: string; // Unique ID for the stream process
   userId?: string; // Optional for backward compatibility, denotes the user who owns this
   name: string; // Custom name for the stream (e.g. "Main Channel")
-  profileId?: string; // ID referencing a StreamKeyProfile
+  profileIds: string[]; // IDs referencing StreamKeyProfiles
   resolution: string; // '720p' | '1080p'
   bitrate: string; // '2500k', '4000k'
   fps: string; // '30', '60'
@@ -47,7 +47,7 @@ const defaultConfig: AppConfig = {
     {
       id: "default-stream-1",
       name: "Main Channel Live",
-      profileId: undefined,
+      profileIds: [],
       resolution: '1080p',
       bitrate: '4000k',
       fps: '60',
@@ -100,7 +100,7 @@ export function getConfig(): AppConfig {
         streams: [{
           id: "default-stream-1",
           name: "Main Channel",
-          profileId: newProfileId,
+          profileIds: [newProfileId],
           resolution: parsed.resolution || '1080p',
           bitrate: parsed.bitrate || '4000k',
           fps: parsed.fps || '60',
@@ -111,6 +111,17 @@ export function getConfig(): AppConfig {
       return migrated;
     }
     
+    if (parsed.streams) {
+      parsed.streams = parsed.streams.map((s: any) => {
+        if (s.profileId && !s.profileIds) {
+          const { profileId, ...rest } = s;
+          return { ...rest, profileIds: [profileId] };
+        }
+        if (!s.profileIds) s.profileIds = [];
+        return s;
+      });
+    }
+
     // Ensure streamKeys exists
     if (!parsed.streamKeys) parsed.streamKeys = [];
     

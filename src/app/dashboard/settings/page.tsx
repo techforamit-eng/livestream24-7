@@ -67,7 +67,11 @@ export default function SettingsPage() {
     const newKeys = config.streamKeys.filter(p => p.id !== profileId);
 
     // Unassign this profile from any streams using it
-    const newStreams = config.streams.map(s => s.profileId === profileId ? { ...s, profileId: undefined } : s);
+    const newStreams = config.streams.map(s => 
+      s.profileIds?.includes(profileId) 
+        ? { ...s, profileIds: s.profileIds.filter(id => id !== profileId) } 
+        : s
+    );
 
     setConfig({ ...config, streamKeys: newKeys, streams: newStreams });
   }

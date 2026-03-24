@@ -35,7 +35,7 @@ export async function GET() {
 
   const allStreams = config.streams.map(stream => {
     const active = activeMap?.get(stream.id);
-    const profile = config.streamKeys.find(k => k.id === stream.profileId);
+    const profiles = (stream.profileIds || []).map(pid => config.streamKeys.find(k => k.id === pid)).filter(Boolean);
     const owner = config.users?.find(u => u.id === (stream.userId || 'admin'));
 
     return {
@@ -47,7 +47,7 @@ export async function GET() {
       bitrate: stream.bitrate,
       fps: stream.fps,
       video: stream.video || 'None',
-      profileName: profile?.name || 'Not configured',
+      profileName: profiles.length > 0 ? (profiles.length === 1 ? (profiles[0] as any).name : `${profiles.length} Destinations`) : 'Not configured',
       status: active ? active.status : 'Stopped',
       uptime: active && active.startTime
         ? Math.floor((new Date().getTime() - new Date(active.startTime).getTime()) / 1000)

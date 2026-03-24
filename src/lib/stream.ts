@@ -118,7 +118,9 @@ export function startStream(streamId: string) {
     return { success: false, message: 'Stream configuration not found' };
   }
 
-  const profile = streamConfig.profileId ? config.streamKeys.find((k: any) => k.id === streamConfig.profileId) : null;
+  const profiles = (streamConfig.profileIds || [])
+    .map(pid => config.streamKeys.find(k => k.id === pid))
+    .filter(p => p && p.streamKey && p.youtubeRtmpUrl);
 
   let stream = activeStreams.get(streamId);
 
@@ -127,13 +129,8 @@ export function startStream(streamId: string) {
     return { success: false, message: 'This stream is already running' };
   }
 
-  // No-op for now as we removed timeouts
-  if (stream) {
-    // We can clear logs if needed, but usually we keep them
-  }
-
-  if (!profile || !profile.streamKey || !profile.youtubeRtmpUrl) {
-    return { success: false, message: 'Stream Profile (URL/Key) is not selected or configured.' };
+  if (profiles.length === 0) {
+    return { success: false, message: 'No valid Stream Profiles (URL/Key) selected.' };
   }
 
   if (!streamConfig.video) {
@@ -155,13 +152,29 @@ export function startStream(streamId: string) {
   const resLimit = RESOLUTION_MAP[streamConfig.resolution] || '1280:720';
   const [w, h] = resLimit.split(':');
 
-  const streamKey = (profile.streamKey || '').trim();
-  const rawRtmpUrl = (profile.youtubeRtmpUrl || '').trim();
-  const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
-  const outputUrl = `${rtmpUrl}${streamKey}`;
+  // Build Output URL(s)
+  let outputFormat = 'flv';
+  let outputUrl = '';
+
+  if (profiles.length === 1) {
+    const p = profiles[0]!;
+    const streamKey = p.streamKey.trim();
+    const rawRtmpUrl = p.youtubeRtmpUrl.trim();
+    const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
+    outputUrl = `${rtmpUrl}${streamKey}`;
+  } else {
+    // Tee muxer syntax: [f=flv]rtmp://...|[f=flv]rtmp://...
+    outputFormat = 'tee';
+    outputUrl = profiles.map(p => {
+      const streamKey = p!.streamKey.trim();
+      const rawRtmpUrl = p!.youtubeRtmpUrl.trim();
+      const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
+      const fullUrl = `${rtmpUrl}${streamKey}`;
+      return `[f=flv]${fullUrl}`;
+    }).join('|');
+  }
 
   // 3. Generate FFmpeg Arguments
-  // Note: -stream_loop -1 must be before -i for concat demuxer to loop correctly
   const args = [
     '-loglevel', 'info',
     '-re',
@@ -176,15 +189,20 @@ export function startStream(streamId: string) {
     '-maxrate', `${bitrate}k`,
     '-bufsize', `${parseInt(bitrate) * 2}k`,
     '-pix_fmt', 'yuv420p',
-    '-g', (parseInt(fps) * 2).toString(), // Dynamic keyframe interval
+    '-g', (parseInt(fps) * 2).toString(),
     '-c:a', 'aac',
     '-b:a', '128k',
     '-ar', '44100',
-    '-f', 'flv',
-    '-fflags', '+genpts+igndts',
-    '-flvflags', 'no_duration_filesize',
-    outputUrl
+    '-f', outputFormat,
   ];
+
+  if (outputFormat === 'tee') {
+    args.push('-map', '0:v', '-map', '0:a');
+  }
+
+  args.push('-fflags', '+genpts+igndts');
+  args.push('-flvflags', 'no_duration_filesize');
+  args.push(outputUrl);
 
   try {
     // Kill any orphaned PID for this streamId just in case

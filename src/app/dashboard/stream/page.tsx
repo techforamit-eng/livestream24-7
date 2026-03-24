@@ -77,7 +77,7 @@ export default function StreamControl() {
     const newStream: StreamInstance = {
       id: uuidv4(),
       name: `Stream ${config.streams.length + 1}`,
-      profileId: config.streamKeys && config.streamKeys.length > 0 ? config.streamKeys[0].id : '',
+      profileIds: config.streamKeys && config.streamKeys.length > 0 ? [config.streamKeys[0].id] : [],
       resolution: '1080p',
       bitrate: '4000k',
       fps: '60',
@@ -203,8 +203,8 @@ export default function StreamControl() {
                     </h4>
                     <div className="space-y-3">
                       <div className="flex justify-between border-b border-gray-800/50 pb-2">
-                        <span className="text-gray-500 text-sm">Profile ID</span>
-                        <span className="text-gray-200 text-sm font-medium truncate max-w-[150px]">{config.streamKeys?.find(k => k.id === streamDef.profileId)?.name || 'Not config'}</span>
+                        <span className="text-gray-500 text-sm">Destinations</span>
+                        <span className="text-gray-200 text-sm font-medium truncate max-w-[150px]">{streamDef.profileIds?.length || 0} selected</span>
                       </div>
                       <div className="flex justify-between border-b border-gray-800/50 pb-2">
                         <span className="text-gray-500 text-sm">Resolution</span>
@@ -326,20 +326,33 @@ export default function StreamControl() {
                         />
                       </div>
                       <div>
-                        <InputLabel icon={Key}>Stream Key Profile Destination</InputLabel>
-                        <select
-                          value={editingStream.profileId || ''}
-                          onChange={e => setEditingStream({ ...editingStream, profileId: e.target.value })}
-                          className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none appearance-none"
-                        >
-                          <option value="" disabled>-- Select a Key Profile from Pool --</option>
-                          {config.streamKeys?.map(k => (
-                            <option key={k.id} value={k.id}>{k.name}</option>
-                          ))}
-                        </select>
-                        {(!config.streamKeys || config.streamKeys.length === 0) && (
-                          <p className="text-red-500 text-xs mt-2 font-medium">No API Profiles found! Build one first in Global Settings.</p>
-                        )}
+                        <InputLabel icon={Key}>Stream Key Destinations (Tee Muxer)</InputLabel>
+                        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4 space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                          {config.streamKeys?.map(k => {
+                            const isSelected = editingStream.profileIds?.includes(k.id);
+                            return (
+                              <label key={k.id} className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-red-500/10' : 'hover:bg-gray-800'}`}>
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 accent-red-600 rounded"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    const ids = editingStream.profileIds || [];
+                                    const newIds = e.target.checked
+                                      ? [...ids, k.id]
+                                      : ids.filter(id => id !== k.id);
+                                    setEditingStream({ ...editingStream, profileIds: newIds });
+                                  }}
+                                />
+                                <span className={`text-sm ${isSelected ? 'text-white' : 'text-gray-400'}`}>{k.name}</span>
+                              </label>
+                            );
+                          })}
+                          {(!config.streamKeys || config.streamKeys.length === 0) && (
+                            <p className="text-red-500 text-xs font-medium italic">No key profiles found! Build one first in Global Settings.</p>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-2">Selecting multiple keys will enable FFmpeg Tee Muxer for multi-streaming.</p>
                       </div>
                     </div>
                   </div>
@@ -462,7 +475,7 @@ export default function StreamControl() {
               <button onClick={() => setEditingStream(null)} className="px-6 py-3 rounded-xl text-gray-400 font-medium hover:text-white transition-colors bg-gray-800/50 hover:bg-gray-800">
                 Cancel
               </button>
-              <button onClick={saveEditingStream} disabled={!editingStream.name || !editingStream.profileId} className="px-8 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              <button onClick={saveEditingStream} disabled={!editingStream.name || !editingStream.profileIds || editingStream.profileIds.length === 0} className="px-8 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 {isCreating ? 'Generate & Save Stream' : 'Update Stream Configuration'}
               </button>
             </div>
