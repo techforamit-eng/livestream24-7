@@ -164,15 +164,14 @@ export function startStream(streamId: string) {
     const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
     outputUrl = `${rtmpUrl}${streamKey}`;
   } else {
-    // Tee muxer syntax: [f=flv:flvflags=no_duration_filesize]rtmp://...|[f=flv:flvflags=no_duration_filesize]rtmp://...
+    // Tee muxer syntax: [f=flv:onfail=ignore:use_fifo=1:fifo_format=flv]rtmp://...
     outputFormat = 'tee';
     outputUrl = profiles.map(p => {
       const streamKey = p!.streamKey.trim();
       const rawRtmpUrl = p!.youtubeRtmpUrl.trim();
       const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
       const fullUrl = `${rtmpUrl}${streamKey}`;
-      // Use simpler flvflags for internal muxer
-      return `[f=flv:flvflags=no_duration_filesize]${fullUrl}`;
+      return `[f=flv:onfail=ignore:use_fifo=1:fifo_format=flv:flvflags=no_duration_filesize]${fullUrl}`;
     }).join('|');
   }
 
@@ -200,11 +199,12 @@ export function startStream(streamId: string) {
   ];
 
   if (outputFormat === 'tee') {
-    args.push('-map', '0:v', '-map', '0:a');
+    args.push('-map', '0:v', '-map', '0:a', '-flags', '+global_header');
   } else {
     args.push('-flvflags', 'no_duration_filesize');
   }
 
+  args.push('-flush_packets', '1');
   args.push(outputUrl);
 
   try {
