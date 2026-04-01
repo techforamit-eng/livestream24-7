@@ -171,7 +171,7 @@ export function startStream(streamId: string) {
       const rawRtmpUrl = p!.youtubeRtmpUrl.trim();
       const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
       const fullUrl = `${rtmpUrl}${streamKey}`;
-      return `[f=flv:onfail=ignore:use_fifo=1:fifo_format=flv:flvflags=no_duration_filesize]${fullUrl}`;
+      return `[f=fifo:fifo_format=flv:onfail=ignore:drop_pkts_on_overflow=1:attempt_recovery=1:recovery_wait_time=1:format_opts=flvflags\\=no_duration_filesize]${fullUrl}`;
     }).join('|');
   }
 
