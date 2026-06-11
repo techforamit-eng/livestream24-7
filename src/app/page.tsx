@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Lock, Radio, Eye, EyeOff } from 'lucide-react';
@@ -7,9 +7,19 @@ import { Lock, Radio, Eye, EyeOff } from 'lucide-react';
 export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const savedPassword = localStorage.getItem('vmagic_remembered_password');
+    const savedRemember = localStorage.getItem('vmagic_remember_me') === 'true';
+    if (savedRemember && savedPassword) {
+      setPassword(savedPassword);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,11 +30,18 @@ export default function LoginPage() {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, rememberMe }),
       });
       const data = await res.json();
 
       if (data.success) {
+        if (rememberMe) {
+          localStorage.setItem('vmagic_remembered_password', password);
+          localStorage.setItem('vmagic_remember_me', 'true');
+        } else {
+          localStorage.removeItem('vmagic_remembered_password');
+          localStorage.removeItem('vmagic_remember_me');
+        }
         router.push('/dashboard');
       } else {
         setError(data.message || 'Invalid password');
@@ -74,6 +91,19 @@ export default function LoginPage() {
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+          </div>
+
+          <div className="flex items-center">
+            <input
+              id="rememberMe"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-800 text-red-600 bg-[#1a1a1a] focus:ring-red-500 focus:ring-offset-0 focus:ring-1 cursor-pointer accent-red-600"
+            />
+            <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-400 cursor-pointer select-none hover:text-gray-300">
+              Remember me
+            </label>
           </div>
 
           {error && (

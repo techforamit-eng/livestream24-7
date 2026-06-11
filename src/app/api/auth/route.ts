@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'vmagic_secure_secret_key_123';
 
 export async function POST(req: Request) {
   try {
-    const { password } = await req.json();
+    const { password, rememberMe } = await req.json();
     const config = getConfig();
 
     let matchedRole: string | null = null;
@@ -42,14 +42,16 @@ export async function POST(req: Request) {
     }
 
     if (matchedRole) {
-      const token = jwt.sign({ role: matchedRole }, JWT_SECRET, { expiresIn: '1d' });
+      const expiresIn = rememberMe ? '30d' : '1d';
+      const maxAge = rememberMe ? 30 * 86400 : 86400;
+      const token = jwt.sign({ role: matchedRole }, JWT_SECRET, { expiresIn });
       const cookieStore = await cookies();
       cookieStore.set('auth-token', token, {
         httpOnly: true,
         // Set to false for now so login works on VPS IP address without SSL
         secure: false, 
         sameSite: 'lax', 
-        maxAge: 86400,
+        maxAge,
         path: '/'
       });
       return NextResponse.json({ success: true });
