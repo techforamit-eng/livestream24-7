@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Square, RotateCw, Settings2, ShieldAlert, Plus, Trash2, Cpu, X, Settings, Link, Key, Video, Activity, Clock } from 'lucide-react';
+import { Play, Square, RotateCw, Settings2, ShieldAlert, Plus, Trash2, Cpu, X, Settings, Link, Key, Video, Activity, Clock, FolderKanban } from 'lucide-react';
 import type { AppConfig, StreamInstance } from '@/lib/config';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -207,7 +207,19 @@ export default function StreamControl() {
                     <div className="space-y-3">
                       <div className="flex justify-between border-b border-gray-800/50 pb-2">
                         <span className="text-gray-500 text-sm">Destinations</span>
-                        <span className="text-gray-200 text-sm font-medium truncate max-w-[150px]">{streamDef.profileIds?.length || 0} selected</span>
+                        <span className="text-gray-200 text-sm font-medium truncate max-w-[150px]">
+                          {(() => {
+                            let total = streamDef.profileIds?.length || 0;
+                            if (streamDef.collectionId) {
+                              const coll = config.collections?.find(c => c.id === streamDef.collectionId);
+                              if (coll) {
+                                const merged = Array.from(new Set([...(streamDef.profileIds || []), ...(coll.profileIds || [])]));
+                                total = merged.length;
+                              }
+                            }
+                            return `${total} selected`;
+                          })()}
+                        </span>
                       </div>
                       <div className="flex justify-between border-b border-gray-800/50 pb-2">
                         <span className="text-gray-500 text-sm">Resolution</span>
@@ -329,17 +341,49 @@ export default function StreamControl() {
                         />
                       </div>
                       <div>
+                        <InputLabel icon={FolderKanban}>Stream Key Collection (Optional)</InputLabel>
+                        <select
+                          value={editingStream.collectionId || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setEditingStream({ ...editingStream, collectionId: val || undefined });
+                          }}
+                          className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none appearance-none"
+                        >
+                          <option value="">-- No Collection (Select Keys Manually Below) --</option>
+                          {config.collections?.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {editingStream.collectionId && (
+                        <div className="text-[11px] text-green-400 bg-green-500/10 border border-green-500/20 p-3 rounded-xl">
+                          <strong>Active keys from Collection:</strong>{' '}
+                          {(() => {
+                            const coll = config.collections?.find(c => c.id === editingStream.collectionId);
+                            const keys = coll?.profileIds?.map(pid => config.streamKeys.find(k => k.id === pid)?.name).filter(Boolean);
+                            return keys && keys.length > 0 ? keys.join(', ') : 'None';
+                          })()}
+                        </div>
+                      )}
+                      <div>
                         <InputLabel icon={Key}>Stream Key Destinations (Tee Muxer)</InputLabel>
                         <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4 space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
                           {config.streamKeys?.map(k => {
-                            const isSelected = editingStream.profileIds?.includes(k.id);
+                            const collection = config.collections?.find(c => c.id === editingStream.collectionId);
+                            const isSelectedViaCollection = collection?.profileIds?.includes(k.id) || false;
+                            const isSelectedManually = editingStream.profileIds?.includes(k.id) || false;
+                            const isChecked = isSelectedViaCollection || isSelectedManually;
+
                             return (
-                              <label key={k.id} className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-red-500/10' : 'hover:bg-gray-800'}`}>
+                              <label key={k.id} className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-colors ${isChecked ? 'bg-red-500/10' : 'hover:bg-gray-800'}`}>
                                 <input
                                   type="checkbox"
                                   className="w-4 h-4 accent-red-600 rounded"
-                                  checked={isSelected}
+                                  checked={isChecked}
+                                  disabled={isSelectedViaCollection}
                                   onChange={(e) => {
+                                    if (isSelectedViaCollection) return;
                                     const ids = editingStream.profileIds || [];
                                     const newIds = e.target.checked
                                       ? [...ids, k.id]
@@ -347,7 +391,14 @@ export default function StreamControl() {
                                     setEditingStream({ ...editingStream, profileIds: newIds });
                                   }}
                                 />
-                                <span className={`text-sm ${isSelected ? 'text-white' : 'text-gray-400'}`}>{k.name}</span>
+                                <span className={`text-sm flex items-center ${isChecked ? 'text-white' : 'text-gray-400'}`}>
+                                  {k.name}
+                                  {isSelectedViaCollection && (
+                                    <span className="text-[10px] text-green-400 ml-2 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 font-semibold">
+                                      (Collection)
+                                    </span>
+                                  )}
+                                </span>
                               </label>
                             );
                           })}
@@ -478,7 +529,7 @@ export default function StreamControl() {
               <button onClick={() => setEditingStream(null)} className="px-6 py-3 rounded-xl text-gray-400 font-medium hover:text-white transition-colors bg-gray-800/50 hover:bg-gray-800">
                 Cancel
               </button>
-              <button onClick={saveEditingStream} disabled={!editingStream.name || !editingStream.profileIds || editingStream.profileIds.length === 0} className="px-8 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              <button onClick={saveEditingStream} disabled={!editingStream.name || (!editingStream.collectionId && (!editingStream.profileIds || editingStream.profileIds.length === 0))} className="px-8 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 {isCreating ? 'Generate & Save Stream' : 'Update Stream Configuration'}
               </button>
             </div>

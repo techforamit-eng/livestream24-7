@@ -2,6 +2,7 @@ import { spawn, ChildProcess } from 'child_process';
 import { getConfig, StreamInstance } from './config';
 import path from 'path';
 import fs from 'fs';
+import pidusage from 'pidusage';
 
 const VIDEOS_DIR = path.join(process.cwd(), 'public', 'videos');
 const PLAYLISTS_DIR = path.join(process.cwd(), 'public', 'playlists');
@@ -119,7 +120,16 @@ export function startStream(streamId: string) {
     return { success: false, message: 'Stream configuration not found' };
   }
 
-  const profiles = (streamConfig.profileIds || [])
+  let profilesToUse = [...(streamConfig.profileIds || [])];
+  if (streamConfig.collectionId) {
+    const collection = (config.collections || []).find(c => c.id === streamConfig.collectionId);
+    if (collection) {
+      profilesToUse = [...profilesToUse, ...(collection.profileIds || [])];
+    }
+  }
+
+  const uniqueProfileIds = Array.from(new Set(profilesToUse));
+  const profiles = uniqueProfileIds
     .map(pid => config.streamKeys.find(k => k.id === pid))
     .filter(p => p && p.streamKey && p.youtubeRtmpUrl);
 
@@ -238,6 +248,11 @@ export function startStream(streamId: string) {
 
     ffmpegProcess.on('close', (code: number | null) => {
       addLog(streamId, `FFmpeg process exited with code ${code}`);
+      if (ffmpegProcess.pid) {
+        try {
+          (pidusage.clear as any)(ffmpegProcess.pid);
+        } catch (e) {}
+      }
       removePid(streamId);
 
       const current = activeStreams.get(streamId);
@@ -293,6 +308,9 @@ export function stopStream(streamId: string) {
 
     if (pid && isProcessRunning(pid)) {
       killProcess(pid);
+      try {
+        (pidusage.clear as any)(pid);
+      } catch (e) {}
     }
 
     stream.status = 'Stopped';
@@ -311,16 +329,21 @@ export function stopStream(streamId: string) {
   return { success: false, message: 'Stream is not running.' };
 }
 
-export function getStreamStatus() {
+export function getStreamStatus(userId?: string) {
   const config = getConfig();
   const statuses: any = {};
 
   config.streams.forEach((stream: StreamInstance) => {
+    const streamOwner = stream.userId || 'admin';
+    if (userId && userId !== 'admin' && streamOwner !== userId) {
+      return;
+    }
+
     const active = activeStreams.get(stream.id);
     statuses[stream.id] = {
       status: active ? active.status : 'Stopped',
       uptime: active && active.startTime ? Math.floor((new Date().getTime() - active.startTime.getTime()) / 1000) : 0,
-      userId: stream.userId || 'admin',
+      userId: streamOwner,
       logs: active ? active.logs : [],
     };
   });

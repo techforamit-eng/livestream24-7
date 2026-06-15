@@ -9,7 +9,7 @@
     {
       "id": "user2",
       "username": "user2",
-      "passwordHash": "$2b$10$dUCCEgNOzjLa7FvzOFKjHu8mHwYtWLuivD3gTCa7BkyGLZg1Xd9Z6"
+      "passwordHash": "$2b$10$u/Czx06vKEWd1V7MFonaF.4jt5AqrWnBQv4Fstf8YtNmMN7mWSGAO"
     },
     {
       "id": "test",
@@ -43,6 +43,60 @@
       "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
       "streamKey": "",
       "userId": "user"
+    },
+    {
+      "id": "1bfadb37-baa2-483c-9846-cdd2bb827ae0",
+      "name": "Bajarang baan",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "sdfsdf",
+      "userId": "user2"
+    },
+    {
+      "id": "921c58d8-291c-4b68-972f-c5181edf7384",
+      "name": "hey mahaveer",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "",
+      "userId": "user2"
+    },
+    {
+      "id": "acce2659-d2cf-45a8-8f91-0d03cb7079d5",
+      "name": "hanuman chalisa",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "",
+      "userId": "user2"
+    },
+    {
+      "id": "c90c34f2-489f-4855-8362-f47bdc414192",
+      "name": "New Key Profile",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "",
+      "userId": "user2"
+    },
+    {
+      "id": "811f757c-28e0-4246-bdf5-4a2a23a2087f",
+      "name": "New Key Profile",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "",
+      "userId": "user2"
+    },
+    {
+      "id": "064008da-7129-4fce-9406-b4ab11c37ebe",
+      "name": "New Key Profile",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "",
+      "userId": "user2"
+    }
+  ],
+  "collections": [
+    {
+      "id": "baa95ac6-da07-4f07-8e27-3ab43c357151",
+      "name": "Bhakti",
+      "profileIds": [
+        "1bfadb37-baa2-483c-9846-cdd2bb827ae0",
+        "921c58d8-291c-4b68-972f-c5181edf7384",
+        "acce2659-d2cf-45a8-8f91-0d03cb7079d5"
+      ],
+      "userId": "user2"
     }
   ],
   "streams": [
@@ -50,23 +104,27 @@
       "id": "587daecb-c05e-4d9c-b0bc-e9768017fe22",
       "userId": "admin",
       "name": "Nisha",
-      "profileId": "03da3142-57f1-4975-8f92-c5ac3200303c",
-      "resolution": "1080p",
-      "bitrate": "4000k",
-      "fps": "60",
-      "video": "heyrishu.mp4"
-    },
-    {
-      "id": "49e8b27b-7f83-478e-bf77-0585c1993b5a",
-      "name": "Stream 1",
-      "profileId": "a73f75bc-49b0-490a-bdd5-ac9959e09e1f",
       "resolution": "1080p",
       "bitrate": "4000k",
       "fps": "60",
       "video": "heyrishu.mp4",
-      "userId": "user"
+      "profileIds": [
+        "03da3142-57f1-4975-8f92-c5ac3200303c"
+      ]
+    },
+    {
+      "id": "49e8b27b-7f83-478e-bf77-0585c1993b5a",
+      "name": "Stream 1",
+      "resolution": "1080p",
+      "bitrate": "4000k",
+      "fps": "60",
+      "video": "heyrishu.mp4",
+      "userId": "user",
+      "profileIds": [
+        "a73f75bc-49b0-490a-bdd5-ac9959e09e1f"
+      ]
     }
   ],
-  "userRole": "user",
+  "userRole": "user2",
   "isImpersonating": false
 }

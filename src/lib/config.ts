@@ -11,11 +11,19 @@ export interface StreamKeyProfile {
   streamKey: string;
 }
 
+export interface StreamKeyCollection {
+  id: string;
+  userId?: string;
+  name: string;
+  profileIds: string[];
+}
+
 export interface StreamInstance {
   id: string; // Unique ID for the stream process
   userId?: string; // Optional for backward compatibility, denotes the user who owns this
   name: string; // Custom name for the stream (e.g. "Main Channel")
   profileIds: string[]; // IDs referencing StreamKeyProfiles
+  collectionId?: string; // Reference to a StreamKeyCollection
   resolution: string; // '720p' | '1080p'
   bitrate: string; // '2500k', '4000k'
   fps: string; // '30', '60'
@@ -33,6 +41,7 @@ export interface AppConfig {
   userRole?: string;
   users?: UserProfile[];
   streamKeys: StreamKeyProfile[];
+  collections?: StreamKeyCollection[];
   streams: StreamInstance[];
 }
 
@@ -43,6 +52,7 @@ const defaultConfig: AppConfig = {
     { id: 'user2', username: 'user2', passwordHash: '$2b$10$wO9nQ85S1eO2/kK3H.Q2pufN7qT2K.w5WlQo.4iI1sX0A9A8C7wY2' } // hash for Sonuvmagic@8858
   ],
   streamKeys: [],
+  collections: [],
   streams: [
     {
       id: "default-stream-1",
@@ -124,6 +134,9 @@ export function getConfig(): AppConfig {
 
     // Ensure streamKeys exists
     if (!parsed.streamKeys) parsed.streamKeys = [];
+    
+    // Ensure collections exists
+    if (!parsed.collections) parsed.collections = [];
     
     // Ensure users array exists
     if (!parsed.users || parsed.users.length === 0) {

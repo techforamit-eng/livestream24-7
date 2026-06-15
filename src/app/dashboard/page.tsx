@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Activity, Cpu, HardDrive, MemoryStick, Network, Radio } from 'lucide-react';
 
 interface SysStats {
@@ -16,12 +16,6 @@ interface SysStats {
   currentUserId: string;
 }
 
-function formatUptime(seconds: number) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return `${h}h ${m}m ${s}s`;
-}
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState<SysStats | null>(null);
@@ -52,28 +46,17 @@ export default function DashboardOverview() {
     );
   }
 
+  const isAdmin = stats.currentUserId === 'admin';
   const activeStreamsCount = Object.values(stats.stream || {})
-    .filter(s => s.userId === stats.currentUserId && s.status === 'Running').length;
+    .filter(s => (isAdmin || s.userId === stats.currentUserId) && s.status === 'Running').length;
   const totalStreamsCount = Object.values(stats.stream || {})
-    .filter(s => s.userId === stats.currentUserId).length;
-
-  // Group by userId
-  const userStats: Record<string, { active: number; total: number }> = {};
-  Object.values(stats.stream || {}).forEach(s => {
-    if (!userStats[s.userId]) {
-      userStats[s.userId] = { active: 0, total: 0 };
-    }
-    userStats[s.userId].total++;
-    if (s.status === 'Running') {
-      userStats[s.userId].active++;
-    }
-  });
+    .filter(s => isAdmin || s.userId === stats.currentUserId).length;
 
   const cards = [
     {
       title: 'Active Streams',
       value: `${activeStreamsCount} / ${totalStreamsCount}`,
-      sub: activeStreamsCount > 0 ? 'Servers Normal' : 'All Offline',
+      sub: activeStreamsCount > 0 ? (isAdmin ? 'Servers Normal' : 'Streams Live') : 'All Offline',
       icon: Radio,
       color: activeStreamsCount > 0 ? 'text-green-500' : 'text-red-500',
       bg: activeStreamsCount > 0 ? 'bg-green-500/10' : 'bg-red-500/10',
@@ -81,7 +64,7 @@ export default function DashboardOverview() {
     {
       title: 'CPU Usage',
       value: `${stats.cpu}%`,
-      sub: 'Server Load',
+      sub: isAdmin ? 'Server Load' : 'My Streams Load',
       icon: Cpu,
       color: 'text-blue-500',
       bg: 'bg-blue-500/10',
@@ -89,7 +72,7 @@ export default function DashboardOverview() {
     {
       title: 'RAM Usage',
       value: `${stats.ram}%`,
-      sub: 'Memory Allocation',
+      sub: isAdmin ? 'Memory Allocation' : 'My Streams Allocation',
       icon: MemoryStick,
       color: 'text-purple-500',
       bg: 'bg-purple-500/10',

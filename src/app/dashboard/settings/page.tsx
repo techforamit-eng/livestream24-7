@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Lock, Link, Trash2, Plus, Key, Eye, EyeOff } from 'lucide-react';
+import { Save, Lock, Link, Trash2, Plus, Key, Eye, EyeOff, FolderKanban } from 'lucide-react';
 import type { AppConfig, StreamKeyProfile } from '@/lib/config';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -76,6 +76,31 @@ export default function SettingsPage() {
     setConfig({ ...config, streamKeys: newKeys, streams: newStreams });
   }
 
+  const addCollection = () => {
+    if (!config) return;
+    const newCollections = [...(config.collections || []), { id: uuidv4(), name: 'New Collection', profileIds: [] }];
+    setConfig({ ...config, collections: newCollections });
+  }
+
+  const removeCollection = (collectionId: string) => {
+    if (!config) return;
+    if (!confirm('Delete this collection?')) return;
+    const newCollections = (config.collections || []).filter(c => c.id !== collectionId);
+    
+    const newStreams = config.streams.map(s =>
+      s.collectionId === collectionId ? { ...s, collectionId: undefined } : s
+    );
+    setConfig({ ...config, collections: newCollections, streams: newStreams });
+  }
+
+  const updateCollection = (collectionId: string, key: 'name' | 'profileIds', value: any) => {
+    if (!config) return;
+    const newCollections = (config.collections || []).map(c =>
+      c.id === collectionId ? { ...c, [key]: value } : c
+    );
+    setConfig({ ...config, collections: newCollections });
+  }
+
   const InputLabel = ({ children, icon: Icon }: any) => (
     <label className="flex items-center space-x-2 text-sm font-medium text-gray-400 mb-2">
       <Icon className="w-4 h-4 text-red-500" />
@@ -137,7 +162,7 @@ export default function SettingsPage() {
             {config.streamKeys.length === 0 ? (
               <div className="text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl italic font-medium text-sm text-center py-8">No stream keys saved. Add one to use in your stream channels!</div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                 {config.streamKeys.map(profile => (
                   <div key={profile.id} className="bg-[#111] border border-gray-800 p-6 rounded-2xl relative shadow-lg">
                     <button type="button" onClick={() => removeProfile(profile.id)} className="absolute top-6 right-6 text-gray-500 hover:text-red-500 transition-colors bg-gray-900 hover:bg-red-500/10 p-2 rounded-lg" title="Delete Profile"><Trash2 className="w-4 h-4" /></button>
@@ -167,6 +192,68 @@ export default function SettingsPage() {
                           >
                             {visibleKeys[profile.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-[#161616] border border-gray-800 rounded-3xl p-8 shadow-2xl">
+            <div className="mb-6 border-b border-gray-800 pb-3 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-white flex items-center">
+                <FolderKanban className="w-6 h-6 mr-3 text-red-500" /> Stream Key Collections (Groups)
+              </h3>
+              <button
+                type="button" onClick={addCollection}
+                className="flex items-center space-x-1 text-sm bg-red-600/10 text-red-500 px-4 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-colors border border-red-500/20 font-medium"
+              >
+                <Plus className="w-4 h-4" /> <span>Add Collection</span>
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-400 mb-6 font-medium">Group multiple stream key profiles together. You can assign collections directly to streams.</p>
+
+            {(!config.collections || config.collections.length === 0) ? (
+              <div className="text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl italic font-medium text-sm text-center py-8">No collections saved. Create one to group your stream keys!</div>
+            ) : (
+              <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {config.collections.map(collection => (
+                  <div key={collection.id} className="bg-[#111] border border-gray-800 p-6 rounded-2xl relative shadow-lg">
+                    <button type="button" onClick={() => removeCollection(collection.id)} className="absolute top-6 right-6 text-gray-500 hover:text-red-500 transition-colors bg-gray-900 hover:bg-red-500/10 p-2 rounded-lg" title="Delete Collection"><Trash2 className="w-4 h-4" /></button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mr-8">
+                      <div>
+                        <InputLabel icon={FolderKanban}>Collection Name</InputLabel>
+                        <input type="text" value={collection.name} onChange={e => updateCollection(collection.id, 'name', e.target.value)} className="w-full max-w-sm bg-[#1a1a1a] text-white px-4 py-3 rounded-xl border border-gray-800 focus:border-red-500 outline-none text-sm font-medium transition-all" />
+                      </div>
+                      <div>
+                        <InputLabel icon={Key}>Key Profiles in Collection</InputLabel>
+                        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4 space-y-2 max-h-36 overflow-y-auto custom-scrollbar">
+                          {config.streamKeys.map(k => {
+                            const isSelected = collection.profileIds?.includes(k.id);
+                            return (
+                              <label key={k.id} className={`flex items-center space-x-3 p-1 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-red-500/10' : 'hover:bg-gray-800'}`}>
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 accent-red-600 rounded"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    const ids = collection.profileIds || [];
+                                    const newIds = e.target.checked
+                                      ? [...ids, k.id]
+                                      : ids.filter(id => id !== k.id);
+                                    updateCollection(collection.id, 'profileIds', newIds);
+                                  }}
+                                />
+                                <span className={`text-sm ${isSelected ? 'text-white' : 'text-gray-400'}`}>{k.name}</span>
+                              </label>
+                            );
+                          })}
+                          {config.streamKeys.length === 0 && (
+                            <p className="text-red-500 text-xs italic">No stream keys available.</p>
+                          )}
                         </div>
                       </div>
                     </div>

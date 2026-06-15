@@ -37,12 +37,18 @@ export async function GET() {
     return kUserId === role;
   });
 
+  const filteredCollections = (config.collections || []).filter(c => {
+    const cUserId = c.userId || 'admin';
+    return cUserId === role;
+  });
+
   const { adminPassHash, ...safeConfig } = config;
 
   return NextResponse.json({
     ...safeConfig,
     streams: filteredStreams,
     streamKeys: filteredKeys,
+    collections: filteredCollections,
     userRole: role,
     isImpersonating: session.isImpersonating
   });
@@ -94,6 +100,16 @@ export async function POST(req: Request) {
       });
       const userKeys = data.streamKeys.map((k: any) => ({ ...k, userId: role }));
       data.streamKeys = [...otherUserKeys, ...userKeys];
+    }
+
+    // Merge collections
+    if (data.collections) {
+      const otherUserCollections = (currentConfig.collections || []).filter(c => {
+        const cUserId = c.userId || 'admin';
+        return cUserId !== role;
+      });
+      const userCollections = data.collections.map((c: any) => ({ ...c, userId: role }));
+      data.collections = [...otherUserCollections, ...userCollections];
     }
 
     saveConfig(data);
