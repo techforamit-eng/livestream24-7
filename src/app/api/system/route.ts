@@ -87,9 +87,10 @@ export async function GET() {
         });
 
         const statsList = await Promise.all(statsPromises);
+        const cores = os.cpus().length || 1;
         for (const stat of statsList) {
           if (stat) {
-            totalUserCpu += stat.cpu;
+            totalUserCpu += stat.cpu / cores;
             totalUserMemBytes += stat.memory;
           }
         }
