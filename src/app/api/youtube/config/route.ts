@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getConfig, saveConfig } from '@/lib/config';
+import { getCleanOrigin } from '@/lib/youtube';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
@@ -19,8 +20,8 @@ async function getUserId() {
 
 export async function GET(req: Request) {
   const config = getConfig();
-  const url = new URL(req.url);
-  const defaultRedirect = `${url.origin}/api/youtube/callback`;
+  const origin = getCleanOrigin(req);
+  const defaultRedirect = `${origin}/api/youtube/callback`;
 
   const apiConfig = config.googleApiConfig || {
     clientId: '',
@@ -29,8 +30,8 @@ export async function GET(req: Request) {
   };
 
   let effectiveRedirect = process.env.GOOGLE_REDIRECT_URI || apiConfig.redirectUri || defaultRedirect;
-  // If previously saved as localhost but current request is from VPS or custom IP, auto-adapt
-  if (effectiveRedirect.includes('localhost') && !url.origin.includes('localhost')) {
+  // If previously saved as localhost or 0.0.0.0, auto-adapt to current clean origin
+  if (effectiveRedirect.includes('localhost') || effectiveRedirect.includes('0.0.0.0')) {
     effectiveRedirect = defaultRedirect;
   }
 
@@ -48,13 +49,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, message: 'Admin access required' }, { status: 403 });
   }
 
-  const { clientId, clientSecret, redirectUri } = await req.json();
+  let { clientId, clientSecret, redirectUri } = await req.json();
   const config = getConfig();
   const existing = config.googleApiConfig || { clientId: '', clientSecret: '', redirectUri: '' };
 
+  clientId = clientId !== undefined ? clientId.trim() : existing.clientId;
+  clientSecret = clientSecret ? clientSecret.trim() : existing.clientSecret;
+
+  // Auto-correct if user accidentally swapped Client ID and Secret in settings
+  if (clientId.startsWith('GOCSPX-') && clientSecret.includes('.apps.googleusercontent.com')) {
+    const temp = clientId;
+    clientId = clientSecret;
+    clientSecret = temp;
+  }
+
   const updated = {
-    clientId: clientId !== undefined ? clientId.trim() : existing.clientId,
-    clientSecret: clientSecret ? clientSecret.trim() : existing.clientSecret,
+    clientId,
+    clientSecret,
     redirectUri: redirectUri !== undefined ? redirectUri.trim() : existing.redirectUri
   };
 

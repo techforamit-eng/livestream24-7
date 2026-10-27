@@ -7,11 +7,46 @@ import { getConfig, saveConfig, ConnectedChannel } from './config';
  */
 export function getOAuth2Client(customRedirectUri?: string) {
   const config = getConfig();
-  const clientId = process.env.GOOGLE_CLIENT_ID || config.googleApiConfig?.clientId || '';
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || config.googleApiConfig?.clientSecret || '';
-  const redirectUri = customRedirectUri || process.env.GOOGLE_REDIRECT_URI || config.googleApiConfig?.redirectUri || 'http://localhost:3000/api/youtube/callback';
+  let clientId = (process.env.GOOGLE_CLIENT_ID || config.googleApiConfig?.clientId || '').trim();
+  let clientSecret = (process.env.GOOGLE_CLIENT_SECRET || config.googleApiConfig?.clientSecret || '').trim();
+
+  // Auto-correct if user accidentally swapped Client ID and Secret in settings
+  if (clientId.startsWith('GOCSPX-') && clientSecret.includes('.apps.googleusercontent.com')) {
+    const temp = clientId;
+    clientId = clientSecret;
+    clientSecret = temp;
+  }
+
+  const redirectUri = customRedirectUri || process.env.GOOGLE_REDIRECT_URI || config.googleApiConfig?.redirectUri || 'https://live.vmagicdigital.com/api/youtube/callback';
 
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+}
+
+/**
+ * Extract clean public origin from request, properly handling Nginx reverse proxy headers
+ */
+export function getCleanOrigin(req: Request): string {
+  const forwardedHost = req.headers.get('x-forwarded-host') || req.headers.get('host');
+  let proto = req.headers.get('x-forwarded-proto') || 'https';
+
+  if (forwardedHost) {
+    const hostWithoutPort = forwardedHost.split(':')[0];
+    if (hostWithoutPort === 'localhost' || hostWithoutPort === '127.0.0.1') {
+      proto = 'http';
+    }
+    if (!forwardedHost.includes('0.0.0.0')) {
+      return `${proto}://${forwardedHost}`;
+    }
+  }
+
+  try {
+    const url = new URL(req.url);
+    if (url.hostname !== '0.0.0.0') {
+      return url.origin;
+    }
+  } catch (e) {}
+
+  return 'https://live.vmagicdigital.com';
 }
 
 /**

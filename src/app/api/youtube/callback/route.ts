@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { exchangeCodeForChannel } from '@/lib/youtube';
+import { exchangeCodeForChannel, getCleanOrigin } from '@/lib/youtube';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
@@ -18,20 +18,21 @@ async function getUserId() {
 }
 
 export async function GET(req: Request) {
+  const origin = getCleanOrigin(req);
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const error = url.searchParams.get('error');
 
   if (error || !code) {
-    return NextResponse.redirect(new URL('/dashboard/auto-stream?error=' + encodeURIComponent(error || 'No code provided'), url.origin));
+    return NextResponse.redirect(new URL('/dashboard/auto-stream?error=' + encodeURIComponent(error || 'No code provided'), origin));
   }
 
   const userId = await getUserId();
-  const result = await exchangeCodeForChannel(code, userId, url.origin);
+  const result = await exchangeCodeForChannel(code, userId, origin);
 
   if (!result.success) {
-    return NextResponse.redirect(new URL('/dashboard/auto-stream?error=' + encodeURIComponent(result.message || 'Authorization failed'), url.origin));
+    return NextResponse.redirect(new URL('/dashboard/auto-stream?error=' + encodeURIComponent(result.message || 'Authorization failed'), origin));
   }
 
-  return NextResponse.redirect(new URL('/dashboard/auto-stream?connected=true&channel=' + encodeURIComponent(result.channel?.title || ''), url.origin));
+  return NextResponse.redirect(new URL('/dashboard/auto-stream?connected=true&channel=' + encodeURIComponent(result.channel?.title || ''), origin));
 }
