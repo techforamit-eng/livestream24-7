@@ -3,6 +3,7 @@ import { getConfig, StreamInstance } from './config';
 import path from 'path';
 import fs from 'fs';
 import pidusage from 'pidusage';
+import { getFFmpegPath } from './ffmpegPath';
 
 const VIDEOS_DIR = path.join(process.cwd(), 'public', 'videos');
 const PLAYLISTS_DIR = path.join(process.cwd(), 'public', 'playlists');
@@ -224,8 +225,9 @@ export function startStream(streamId: string) {
       killProcess(pids[streamId]);
     }
 
-    console.log(`[Stream] Executing: ffmpeg ${args.join(' ')}`);
-    const ffmpegProcess = spawn('ffmpeg', args, { stdio: 'pipe' });
+    const ffmpegBin = getFFmpegPath();
+    console.log(`[Stream] Executing: ${ffmpegBin} ${args.join(' ')}`);
+    const ffmpegProcess = spawn(ffmpegBin, args, { stdio: 'pipe' });
 
     if (!ffmpegProcess.pid) {
       throw new Error('Failed to spawn FFmpeg process');

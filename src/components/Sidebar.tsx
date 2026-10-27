@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Radio, Settings, LogOut, Film, Users, ArrowLeftCircle, ShieldCheck, FolderKanban } from 'lucide-react';
+import { LayoutDashboard, Radio, Settings, LogOut, Film, Users, ArrowLeftCircle, ShieldCheck, FolderKanban, Zap } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useState, useEffect } from 'react';
@@ -13,6 +13,7 @@ function cn(...inputs: ClassValue[]) {
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: Radio, label: 'Stream Control', href: '/dashboard/stream' },
+  { icon: Zap, label: 'Auto Streamer', href: '/dashboard/auto-stream' },
   { icon: Film, label: 'File Manager', href: '/dashboard/videos' },
   { icon: Users, label: 'User Manage', href: '/dashboard/users', adminOnly: true },
   { icon: FolderKanban, label: 'Manage Files', href: '/dashboard/manage-files', adminOnly: true },

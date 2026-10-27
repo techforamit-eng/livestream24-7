@@ -180,5 +180,10 @@ app.prepare().then(() => {
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(`> Video uploads handled directly (bypassing Next.js body parser)`);
     console.log(`> Server timeouts disabled for large file support`);
+
+    // Auto-bootstrap background stream scheduler daemon
+    setTimeout(() => {
+      fetch(`http://127.0.0.1:${port}/api/automation`).catch(() => {});
+    }, 2500);
   });
 });

@@ -1,0 +1,22 @@
+{
+  "adminPassHash": "$2b$10$oiPKQbzNm6kWG3Ndkv9Ku.nt2VczMWGd7nZsbFdQBaXwBN7WMeqTG",
+  "users": [
+    {
+      "id": "admin",
+      "username": "admin",
+      "passwordHash": "$2b$10$oiPKQbzNm6kWG3Ndkv9Ku.nt2VczMWGd7nZsbFdQBaXwBN7WMeqTG"
+    }
+  ],
+  "streamKeys": [],
+  "collections": [],
+  "streams": [],
+  "connectedChannels": [],
+  "autoTasks": [],
+  "googleApiConfig": {
+    "clientId": "",
+    "clientSecret": "",
+    "redirectUri": ""
+  },
+  "userRole": "admin",
+  "isImpersonating": false
+}

@@ -36,6 +36,67 @@ export interface UserProfile {
   passwordHash: string;
 }
 
+export interface ConnectedChannel {
+  id: string; // YouTube Channel ID (e.g. UC...)
+  title: string;
+  thumbnail?: string;
+  userId: string; // which system user owns this (e.g. 'admin')
+  tokens: any;
+  connectedAt: string;
+}
+
+export interface ScheduleTimeSlot {
+  id: string;
+  label?: string; // e.g. "Morning Aarti", "Evening Bhajan"
+  startTime: string; // "06:00", "18:00"
+  durationMins: number; // e.g. 60, 120
+  days?: number[]; // [0,1,2,3,4,5,6] (Sunday=0)
+}
+
+export interface AutoStreamTask {
+  id: string;
+  userId: string;
+  name: string;
+  channelIds: string[]; // target YouTube channel IDs
+  video: string; // video filename
+  cpuMode: 'ultralow' | 'custom'; // 'ultralow' = passthrough copy, 'custom' = transcode
+  resolution: string; // '720p', '1080p', etc.
+  bitrate: string; // '2500k', '4000k', etc.
+  fps: string; // '30', '60'
+  mode: 'loop' | 'scheduled'; // Loop vs Scheduled Clock Time
+  loopSettings: {
+    runDurationMins: number; // e.g. 60 mins
+    cooldownMins: number; // e.g. 5 mins
+  };
+  scheduleSettings: {
+    startTime: string; // "18:00" (fallback)
+    durationMins: number; // 60 or 120 (fallback)
+    timeSlots?: ScheduleTimeSlot[]; // multiple schedule slots per day!
+    days?: number[]; // [0,1,2,3,4,5,6] (Sunday=0)
+  };
+  broadcastSettings: {
+    title: string;
+    description: string;
+    tags?: string[]; // e.g. ["bhajan", "live", "music"]
+    thumbnail?: string; // filename in public/thumbnails
+    privacyStatus: 'public' | 'unlisted' | 'private';
+    categoryId?: string;
+  };
+  enabled: boolean;
+  state: 'idle' | 'streaming' | 'cooldown' | 'scheduled';
+  activeSlotId?: string;
+  sessionStartTime?: string;
+  nextEventAt?: string;
+  activeBroadcasts?: Record<string, { broadcastId: string; streamId: string; streamKey: string; rtmpUrl: string }>;
+  logs?: string[];
+}
+
+export interface GoogleApiConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri?: string;
+}
+
 export interface AppConfig {
   adminPassHash: string;
   userRole?: string;
@@ -43,6 +104,9 @@ export interface AppConfig {
   streamKeys: StreamKeyProfile[];
   collections?: StreamKeyCollection[];
   streams: StreamInstance[];
+  connectedChannels?: ConnectedChannel[];
+  autoTasks?: AutoStreamTask[];
+  googleApiConfig?: GoogleApiConfig;
 }
 
 const defaultConfig: AppConfig = {
@@ -63,7 +127,14 @@ const defaultConfig: AppConfig = {
       fps: '60',
       video: '',
     }
-  ]
+  ],
+  connectedChannels: [],
+  autoTasks: [],
+  googleApiConfig: {
+    clientId: '',
+    clientSecret: '',
+    redirectUri: '',
+  }
 };
 
 export function getConfig(): AppConfig {
@@ -146,6 +217,10 @@ export function getConfig(): AppConfig {
         { id: 'user2', username: 'user2', passwordHash: '$2b$10$n4O0Hl.33kP.A9Bw00D.kOYf.1t5E.v8R7X/S2wYw0b4q4pY5tNlK' } // This is just a fallback valid hash
       ];
     }
+
+    if (!parsed.connectedChannels) parsed.connectedChannels = [];
+    if (!parsed.autoTasks) parsed.autoTasks = [];
+    if (!parsed.googleApiConfig) parsed.googleApiConfig = { clientId: '', clientSecret: '', redirectUri: '' };
 
     return { ...defaultConfig, ...parsed };
   } catch (e) {

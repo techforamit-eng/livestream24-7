@@ -46,3 +46,6 @@ next-env.d.ts
 /public/playlists/*.txt
 /public/videos/*.mp4
 /*.js.map
+
+# Local data & stream configurations
+data.json
