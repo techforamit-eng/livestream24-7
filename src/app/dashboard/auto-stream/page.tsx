@@ -40,6 +40,7 @@ export default function AutoStreamPage() {
   const [hasClientSecret, setHasClientSecret] = useState(false);
   const [copiedRedirect, setCopiedRedirect] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [tagsInputText, setTagsInputText] = useState('');
 
   const fetchTasks = async () => {
     try {
@@ -233,8 +234,9 @@ export default function AutoStreamPage() {
         description: 'Automated 24/7 YouTube Stream',
         privacyStatus: 'public'
       },
-      enabled: true
+      enabled: false
     });
+    setTagsInputText('');
     setIsTaskModalOpen(true);
   };
 
@@ -243,6 +245,7 @@ export default function AutoStreamPage() {
       ? task.scheduleSettings.timeSlots
       : [{ id: 'slot-1', label: 'Slot 1', startTime: task.scheduleSettings?.startTime || '18:00', durationMins: task.scheduleSettings?.durationMins || 60 }];
 
+    setTagsInputText((task.broadcastSettings?.tags || []).join(', '));
     setEditingTask({
       ...task,
       scheduleSettings: {
@@ -262,10 +265,22 @@ export default function AutoStreamPage() {
     }
     setLoading(true);
     try {
+      const finalTags = (editingTask?.broadcastSettings?.tags && editingTask.broadcastSettings.tags.length > 0)
+        ? editingTask.broadcastSettings.tags
+        : tagsInputText.split(/[,;\n]+/).map(t => t.replace(/^#+/, '').trim()).filter(Boolean);
+
+      const payload = {
+        ...editingTask,
+        broadcastSettings: {
+          ...(editingTask.broadcastSettings || { title: '', description: '', privacyStatus: 'public' }),
+          tags: finalTags
+        }
+      };
+
       const res = await fetch('/api/automation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task: editingTask })
+        body: JSON.stringify({ task: payload })
       });
       const data = await res.json();
       if (data.success) {
@@ -1090,9 +1105,10 @@ export default function AutoStreamPage() {
                     </label>
                     <input
                       type="text"
-                      value={(editingTask.broadcastSettings?.tags || []).join(', ')}
+                      value={tagsInputText}
                       onChange={(e) => {
                         const raw = e.target.value;
+                        setTagsInputText(raw);
                         let parsed: string[] = [];
                         if (raw.includes(',') || raw.includes(';') || raw.includes('\n')) {
                           parsed = raw.split(/[,;\n]+/).map(t => t.replace(/^#+/, '').trim()).filter(Boolean);
