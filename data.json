@@ -1,0 +1,1028 @@
+{
+  "adminPassHash": "$2b$10$oiPKQbzNm6kWG3Ndkv9Ku.nt2VczMWGd7nZsbFdQBaXwBN7WMeqTG",
+  "users": [
+    {
+      "id": "admin",
+      "username": "admin",
+      "passwordHash": "$2b$10$oiPKQbzNm6kWG3Ndkv9Ku.nt2VczMWGd7nZsbFdQBaXwBN7WMeqTG"
+    },
+    {
+      "id": "user2",
+      "username": "user2",
+      "passwordHash": "$2b$10$Aml/oNdrgbVk.tWIRkTORONIeeeIFGun6ETFJ0i8v5j8Urv7kO92K"
+    }
+  ],
+  "streamKeys": [
+    {
+      "id": "a73f75bc-49b0-490a-bdd5-ac9959e09e1f",
+      "name": "Nisha Upadhyay",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "he7r-wvr4-u82c-ks7u-bj0t",
+      "userId": "user"
+    },
+    {
+      "id": "06bdb301-1490-4466-af5b-b710ea747482",
+      "name": "test2",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "",
+      "userId": "user"
+    },
+    {
+      "id": "d8bfe726-15f9-466b-a3e4-e74084ca9f31",
+      "name": "Sanwariya Bhakti Sangrah (Bajrang baan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "hr8a-qfqw-g755-q66c-8tkd",
+      "userId": "admin"
+    },
+    {
+      "id": "9a5ef859-3faa-4ad0-85df-a7cdc655b5c2",
+      "name": "Sanwariya Bhakti Sangrah (hanuman Chalisa)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "b7m2-4wcu-vdhy-2hbe-fx3z",
+      "userId": "admin"
+    },
+    {
+      "id": "62708c3b-aba3-4b82-8456-47452afb13fe",
+      "name": "Sanwariya Bhakti Sangrah (Hey Mahaveer)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "1v1s-wua5-cpgr-1r9d-5fr2",
+      "userId": "admin"
+    },
+    {
+      "id": "5eb291be-3048-4c86-9395-95cb77651008",
+      "name": "Sanwariya Bhakti Sangrah (Hanuman Aarti)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "mh02-2h4g-beet-tyda-8psg",
+      "userId": "admin"
+    },
+    {
+      "id": "c8b7c68a-70ad-4d9d-9f16-6ad536621e05",
+      "name": "Tara Records Hits (Hanuman Chalisa)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "ugkm-qj6e-gj73-7vcm-ccv1",
+      "userId": "admin"
+    },
+    {
+      "id": "e26fd82e-6536-4d3c-924f-6bf5829af68a",
+      "name": "Deepali Entertainment (Hanuman Chalisa)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "tswr-y8w1-cktz-9ru1-1tx0",
+      "userId": "admin"
+    },
+    {
+      "id": "0593f765-a0fb-40ed-a5ef-6bf24f3d30a2",
+      "name": "Tara Records Hits (Bajrang Baan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "h7m9-v9yg-1uer-sjuc-aduy",
+      "userId": "admin"
+    },
+    {
+      "id": "fb2cdf2a-b7f2-43a0-8773-4f6d88355695",
+      "name": "Deepali Entertainment (Bajrang Baan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "3eyq-ewqc-etq2-amup-0tw5",
+      "userId": "admin"
+    },
+    {
+      "id": "0c4778f0-b54b-439b-9c9c-2dc53e0aaa5e",
+      "name": "Tara Records Hits (Hanuman Ashtak)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "cevd-p8z6-5sw5-3zrh-d1zt",
+      "userId": "admin"
+    },
+    {
+      "id": "0caae72c-356d-4d26-8a69-95011f1296e1",
+      "name": "Deepali Entertainment (Hanuman Ashtak)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "eccr-1607-1jbd-8rrz-6y6h",
+      "userId": "admin"
+    },
+    {
+      "id": "51ba0bdf-d13b-4787-a264-2beb4b28775d",
+      "name": "Tara Records Hits (Hey Mahaveer)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "dk8u-5pkk-5s02-0ud2-5jeq",
+      "userId": "admin"
+    },
+    {
+      "id": "f92564e9-9e6e-4cc2-a324-5ce7d4297cec",
+      "name": "Deepali Entertainment (Hey Mahaveer)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "upsg-tfye-ze6g-k6w1-e22k",
+      "userId": "admin"
+    },
+    {
+      "id": "1bfadb37-baa2-483c-9846-cdd2bb827ae0",
+      "name": "Mahabali Devotional (Hey Mahaveer)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "7mra-dwqz-zkvp-j401-ce98",
+      "userId": "user2"
+    },
+    {
+      "id": "921c58d8-291c-4b68-972f-c5181edf7384",
+      "name": "Mahabali Bhakti (Hey Mahaveer)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "s7qy-93p4-w6qf-jgjd-e705",
+      "userId": "user2"
+    },
+    {
+      "id": "acce2659-d2cf-45a8-8f91-0d03cb7079d5",
+      "name": "Mahabali Devotional (bajrang Baan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "pq15-7arp-cfp5-d662-d0ag",
+      "userId": "user2"
+    },
+    {
+      "id": "c90c34f2-489f-4855-8362-f47bdc414192",
+      "name": "Mahabali Bhakti (bajrang Baan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "0wj2-fbcu-9a57-yqt8-60am",
+      "userId": "user2"
+    },
+    {
+      "id": "811f757c-28e0-4246-bdf5-4a2a23a2087f",
+      "name": "Mahabali Devotional (Hey Dukh Bhanjan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "19rh-h1j7-z39c-ws38-3mwv",
+      "userId": "user2"
+    },
+    {
+      "id": "064008da-7129-4fce-9406-b4ab11c37ebe",
+      "name": "Mahabali Bhakti  (Hey Dukh Bhanjan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "0w23-31yc-pk2g-5vv2-1950",
+      "userId": "user2"
+    },
+    {
+      "id": "ef7bcb8f-5612-4b31-8634-869a9573b1c0",
+      "name": "Mahabali Devotional (Hanuman Chalisa)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "uepp-bs5x-em0s-0b9e-bdg1",
+      "userId": "user2"
+    },
+    {
+      "id": "1781e000-fcfb-490d-839c-74d22956052b",
+      "name": "New Key Profile (Hanuman Chalisa)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "88q7-rfw4-zw30-zyjb-6zzk",
+      "userId": "user2"
+    },
+    {
+      "id": "7742c745-ea0d-49d1-a949-e1271c8d7f70",
+      "name": "Yashvi Music (Sad Video)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "qdd5-7gxa-78qe-e1w3-161a",
+      "userId": "user2"
+    },
+    {
+      "id": "3c1a2371-b433-4606-a12f-9a0b428d147e",
+      "name": "Mahabali Sad Song (Sad Video)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "0a5m-vpyy-98ax-gzbw-b17b",
+      "userId": "user2"
+    },
+    {
+      "id": "fffe998d-be9f-468e-b33e-c4a909c4946f",
+      "name": "Mahabali Melody (Sad Video)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "xqub-zdwr-4gcm-rtpp-0hze",
+      "userId": "user2"
+    },
+    {
+      "id": "a85dcdcd-bdde-45e4-b386-41e86ebf6059",
+      "name": "Mahabali Tone (Sad Video)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "hcap-uc88-c2m9-7t6y-etps",
+      "userId": "user2"
+    },
+    {
+      "id": "84185d95-44dd-443a-8ff0-d378e43b25cb",
+      "name": "Mahabali Hits (Sad Video)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "mdj5-eg46-29v4-0cw6-aayc",
+      "userId": "user2"
+    },
+    {
+      "id": "55f43444-e02a-411e-bcd8-8f1e2e3aafd4",
+      "name": "Mahabali Bhojpuri (Sad Video)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "z0e4-0y9s-d3bd-gjzq-1k2t",
+      "userId": "user2"
+    },
+    {
+      "id": "e7ee7be1-1200-4c67-9495-f2af6f02ba3b",
+      "name": "Mahabali Dhun (Sad Video)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "hwe4-cpvc-dv7c-70dg-44hv",
+      "userId": "user2"
+    },
+    {
+      "id": "758d8771-a89e-40ba-925c-85993828fa2c",
+      "name": "Yashvi Music (Audio 3)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "pwb1-ea6p-y129-u5qy-65h0",
+      "userId": "user2"
+    },
+    {
+      "id": "63fba53c-0bfa-43a9-af6d-546b9ec96ba9",
+      "name": "Mahabali Sad Song (Audio 3)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "ykzj-duh9-szb8-p031-ef5v",
+      "userId": "user2"
+    },
+    {
+      "id": "b412f17e-5b40-4459-8707-27884ab02468",
+      "name": "Mahabali Melody (Audio 3)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "r97m-18gj-0tht-5v8y-dvzc",
+      "userId": "user2"
+    },
+    {
+      "id": "3d814a5a-1f5c-41c8-bc27-1c1ebfe9927a",
+      "name": "Mahabali Tone (Audio 3)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "12rx-pb5j-zk9j-uerc-4z7p",
+      "userId": "user2"
+    },
+    {
+      "id": "f7c3592c-81ed-411d-9cba-3d96da52646a",
+      "name": "Mahabali Hits (Audio 3)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "cpxs-h8bf-6e10-6cb3-4vjv",
+      "userId": "user2"
+    },
+    {
+      "id": "7df9f892-a0b2-440a-8663-49dafe30517c",
+      "name": "Mahabali Bhojpuri (Audio 3)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "3ybw-btab-eqzq-mta2-2tx8",
+      "userId": "user2"
+    },
+    {
+      "id": "636b5d2e-ccc2-48fc-8d4e-fab77dcd2b07",
+      "name": "Mahabali Dhun (Audio 3)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "51gt-pu6z-1emk-x8dq-19xh",
+      "userId": "user2"
+    },
+    {
+      "id": "7f656e65-499c-42e6-9bdb-83b7f11ae8ff",
+      "name": "Yashvi Music (Pankaj Matalbi)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "6dcv-ujak-kezx-073x-2ybs",
+      "userId": "user2"
+    },
+    {
+      "id": "73947ea1-4401-4700-9dbc-0dbc33a4f669",
+      "name": "Mahabali Sad Song (Pankaj Matalbi)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "68b1-y9zh-kbeh-swjk-91j0",
+      "userId": "user2"
+    },
+    {
+      "id": "c172e637-5f3d-49f4-9aa3-dfdbc8e082f3",
+      "name": "Mahabali Melody (Pankaj Matalbi)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "rfk4-gjcu-0ht9-f3az-3zzx",
+      "userId": "user2"
+    },
+    {
+      "id": "5c651d08-0f8d-4bbb-9f37-d8fb4c99227b",
+      "name": "Mahabali Tone (Pankaj Matalbi)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "bcut-5udq-bhy6-eur5-ea48",
+      "userId": "user2"
+    },
+    {
+      "id": "67ed4268-e573-4342-b1bc-161fa073a7e5",
+      "name": "Mahabali Hits (Pankaj Matalbi)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "8963-f4s2-r757-bd34-465s",
+      "userId": "user2"
+    },
+    {
+      "id": "72e6028f-26f1-437c-84ff-b58465603493",
+      "name": "Mahabali Bhojpuri (Pankaj Matalbi)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "3zc6-khgy-4hz3-brmz-9y3t",
+      "userId": "user2"
+    },
+    {
+      "id": "a7e1f132-3a56-4601-bf5e-a8c9a2413ba0",
+      "name": "Mahabali Dhun (Pankaj Matalbi)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "r3jm-1awc-bcew-fpyb-akvr",
+      "userId": "user2"
+    },
+    {
+      "id": "9e825889-dfff-4b34-bbd4-98d228aa7295",
+      "name": "Yashvi Music (Audio 1) ",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "2wc2-c026-82wq-svw5-c5d8",
+      "userId": "user2"
+    },
+    {
+      "id": "6325faf7-4655-498c-a781-d8b83a1d9c7a",
+      "name": "Mahabali Sad Song (Audio 1)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "9juv-9p5v-m2s7-w75s-086t",
+      "userId": "user2"
+    },
+    {
+      "id": "2c88577a-1838-4408-b55d-1443acd01108",
+      "name": "Mahabali Melody (Audio 1)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "ad1v-fkus-ppmp-f7k6-b4vw",
+      "userId": "user2"
+    },
+    {
+      "id": "62f6f791-a916-4044-b69e-92ef194df5b4",
+      "name": "Mahabali Tone (Audio 1)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "desc-kqyb-kth3-e5f5-4vjp",
+      "userId": "user2"
+    },
+    {
+      "id": "5aa0c208-7726-4271-99c7-0ef9b93fff44",
+      "name": "Mahabali Hits (Audio 1)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "js2s-g3zb-0aya-tydc-ards",
+      "userId": "user2"
+    },
+    {
+      "id": "f187d7de-f263-40fe-9fbe-1c9aeb9677ae",
+      "name": "Mahabali Bhojpuri (Audio 1)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "jbaa-w8yb-cp9m-7dvc-2p53",
+      "userId": "user2"
+    },
+    {
+      "id": "72054109-6c1d-43ae-83f1-bd874459ae03",
+      "name": "Mahabali Dhun (Audio 1)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "r9vr-xjpz-41vh-e6yf-arxp",
+      "userId": "user2"
+    },
+    {
+      "id": "cc88b29b-227a-476c-8a66-7e3010c3c9c1",
+      "name": "Yashvi Music (Audio 2)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "a3mg-a1tg-3ux9-gmvt-6k39",
+      "userId": "user2"
+    },
+    {
+      "id": "491dc5ad-b4ca-4dd2-b924-aafe2efcd957",
+      "name": "Mahabali Sad Song (Audio 2)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "xs5a-5hbp-prr4-ghtj-1900",
+      "userId": "user2"
+    },
+    {
+      "id": "f1075619-f00e-419e-a6b1-aa3cae3a65b0",
+      "name": "Mahabali Melody (Audio 2)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "jekd-ufv6-yjte-gmx8-f4uh",
+      "userId": "user2"
+    },
+    {
+      "id": "3385b852-3a1e-406d-a467-8338eaab4bc2",
+      "name": "Mahabali Tone (Audio 2)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "fkha-7f14-r3xg-ga4d-a6xj",
+      "userId": "user2"
+    },
+    {
+      "id": "8113552c-6d1d-4aa4-9a1f-2ad4e5f2929f",
+      "name": "Mahabali Hits (Audio 2)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "uymq-g8p7-4137-gy70-a3fj",
+      "userId": "user2"
+    },
+    {
+      "id": "c007d29b-04c0-429c-877c-7344546d96f9",
+      "name": "Mahabali Bhojpuri (Audio 2)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "t9ru-51yh-rfms-h8xq-0e1k",
+      "userId": "user2"
+    },
+    {
+      "id": "1742cb05-8f10-4a56-b805-ac0e3e4a26ec",
+      "name": "Mahabali Dhun (Audio 2)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "ct2f-51xt-4wbz-dca9-75f9",
+      "userId": "user2"
+    },
+    {
+      "id": "d77fea2d-0eca-4f7f-8508-0f5cd496e221",
+      "name": "Yashvi Music (Audio 4)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "140h-phte-e36q-u0tt-7f96",
+      "userId": "user2"
+    },
+    {
+      "id": "90ce5ae8-c632-4a43-9670-1c4ecd414e72",
+      "name": "Mahabali Sad Song (Audio 4)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "wytk-7qcw-ah8t-hu40-17tq",
+      "userId": "user2"
+    },
+    {
+      "id": "69b713d4-c5c9-4c3a-af68-0159db50af87",
+      "name": "Mahabali Melody (Audio 4)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "dyrj-exud-vs40-8xbr-5pmc",
+      "userId": "user2"
+    },
+    {
+      "id": "619a702f-74ff-48bc-8d3e-3c7a71d74d3c",
+      "name": "Mahabali Tone (Audio 4)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "qdam-zy8b-e65s-a267-4157",
+      "userId": "user2"
+    },
+    {
+      "id": "36db26fe-b212-4a90-b21c-7e10d1d40f72",
+      "name": "Mahabali Hits (Audio 4)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "j22k-tjcx-523e-ajzz-9181",
+      "userId": "user2"
+    },
+    {
+      "id": "377cfe60-0f3d-43df-bdde-98ee1c971090",
+      "name": "Mahabali Bhojpuri (Audio 4)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "c8u0-qsts-mf4y-r23s-528j",
+      "userId": "user2"
+    },
+    {
+      "id": "fa9dde72-c1f6-4a10-bd71-80a549317a65",
+      "name": "Mahabali Dhun (Audio 4)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "7k6t-wb88-b0wt-wfyp-5djf",
+      "userId": "user2"
+    },
+    {
+      "id": "67cda90a-4960-44ca-ae3a-fbf4b71c4ff9",
+      "name": "Yashvi Music (Audio 5)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "38hb-d17y-zc7t-51z3-epxp",
+      "userId": "user2"
+    },
+    {
+      "id": "dda0a704-3f91-4340-af1a-6d5435c3d088",
+      "name": "Mahabali Sad Song (Audio 5)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "h6js-7r1h-86zj-rz21-7s84",
+      "userId": "user2"
+    },
+    {
+      "id": "5e739e61-af61-484b-80c3-58bcd3029302",
+      "name": "Mahabali Melody (Audio 5)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "x0zq-5jj9-ztbq-2z19-emm4",
+      "userId": "user2"
+    },
+    {
+      "id": "b10d6696-77f2-4200-9ceb-0a885dda4b1b",
+      "name": "Mahabali Tone (Audio 5)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "9q4c-1qc6-c7xm-z13r-dvu9",
+      "userId": "user2"
+    },
+    {
+      "id": "171c0eda-39f8-41b2-bea3-6888ee3dc979",
+      "name": "Mahabali Hits (Audio 5)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "05k3-ha9r-9927-d8sy-fu7a",
+      "userId": "user2"
+    },
+    {
+      "id": "58d97df9-595e-42ec-8378-a3dee391d702",
+      "name": "Mahabali Bhojpuri (Audio 5)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "qhk2-8rxu-8xet-avy5-2kz5",
+      "userId": "user2"
+    },
+    {
+      "id": "ac682760-5bb9-4da5-836f-b0e36892438a",
+      "name": "Mahabali Dhun (Audio 5)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "7xxz-934b-2u8m-55ph-5sw9",
+      "userId": "user2"
+    },
+    {
+      "id": "749e8cf8-7b2c-45f8-a9b4-dd410cadb9ad",
+      "name": "Mahabali Traditional (Bajrang Baan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "sjfb-h2ef-3155-2akv-0vhe",
+      "userId": "user2"
+    },
+    {
+      "id": "98c0f0c5-6442-456a-9259-79b562a975a2",
+      "name": "Mahabali Traditional (Hey Mahaveer Karo Kalyan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "52t7-z04m-q4wq-7rf8-8zh8",
+      "userId": "user2"
+    },
+    {
+      "id": "ecf0b255-ce9d-431b-a79e-8fa31373f507",
+      "name": "Mahabali Traditional (Hey Dukh Bhanjan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "jeag-jaks-29zy-0tjq-6rzw",
+      "userId": "user2"
+    },
+    {
+      "id": "3c291588-70d2-4569-aebc-4ec91b3c4149",
+      "name": "Mahabali Traditional (Hanuman Chalisa)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "skyr-qdmt-58jd-zqak-5hkd",
+      "userId": "user2"
+    },
+    {
+      "id": "4abe33e5-aa80-41d3-9d13-c7c20e50b8cf",
+      "name": "Mahabali Devotional (Shiv Shambhu)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "8b8w-qf1j-ah22-60q1-fcfy",
+      "userId": "user2"
+    },
+    {
+      "id": "f74b73b8-9f25-44ad-bc61-a03278c51304",
+      "name": "Mahabali Traditional (Shiv Shambhu)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "k877-f4pv-w80k-h0b8-5edf",
+      "userId": "user2"
+    },
+    {
+      "id": "7472aee9-205a-4ac0-b74c-0e0737377756",
+      "name": "Mahabali Bhakti (Shiv Shambhu)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "emah-pguc-x0pb-24uy-6sr1",
+      "userId": "user2"
+    },
+    {
+      "id": "1ecc23d4-cee1-477e-b2e6-e38481ff27b8",
+      "name": "Shiv Shambhu",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "723w-3qb8-uk27-51ba-etax",
+      "userId": "user2"
+    },
+    {
+      "id": "30a7ec3f-f5c9-486f-a196-db347711444b",
+      "name": "Yashvi Music (Audio7)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "e4qf-xxxb-6vg0-ctf4-augj",
+      "userId": "user2"
+    },
+    {
+      "id": "9269eac1-6e75-4742-bc44-41794a089d4b",
+      "name": "Mahabali Sad Song (audio7)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "74uw-uaat-t3h3-agpy-ebsc",
+      "userId": "user2"
+    },
+    {
+      "id": "8c71cfeb-0bb4-482d-8673-9ca87378b733",
+      "name": "Mahabali Melody (audio7)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "sesq-654r-zrug-f16g-c32s",
+      "userId": "user2"
+    },
+    {
+      "id": "0212eb76-af91-41e0-b6f2-4c9f33f9e14c",
+      "name": "Mahabali Tone (audio7)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "vaj4-vs50-y2fc-evwz-bf5f",
+      "userId": "user2"
+    },
+    {
+      "id": "859742b9-b65e-484b-a096-c420a5a6b011",
+      "name": "Mahabali Hits (audio7)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "w3fu-0kch-uxbw-6jvs-92fk",
+      "userId": "user2"
+    },
+    {
+      "id": "03a58e66-128f-4bfe-84db-18141d67189f",
+      "name": "Mahabali Bhojpuri (audio7)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "v2ux-56w8-q614-rgsk-a5rw",
+      "userId": "user2"
+    },
+    {
+      "id": "b565c7d1-1569-4d07-b9ee-c0a77bc10a62",
+      "name": "Mahabali Dhun (audio7)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "qe4c-74tm-pcx6-qcdy-23tw",
+      "userId": "user2"
+    },
+    {
+      "id": "a2764e46-bc89-47fe-bee3-d967f32d223e",
+      "name": "Mahabali Devotional (Mere Girdhar Tu Hi Sahara Hai)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "gvde-vew8-j8tw-eqm3-a1rw",
+      "userId": "user2"
+    },
+    {
+      "id": "bad65a2f-6689-47e9-a775-dfa74c1871d1",
+      "name": "Mahabali Bhajan (Mere Girdhar Tu Hi Sahara Hai)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "bds5-dy99-z2ye-jhww-fmg1",
+      "userId": "user2"
+    },
+    {
+      "id": "d8b988e9-98b1-4746-ad47-36bfbb0555b6",
+      "name": "Mahabali Spiritual (Hay Mahaveer)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "yt8q-j3vy-02k2-qcyg-bqw4",
+      "userId": "user2"
+    },
+    {
+      "id": "35e2b14f-aabb-4866-9416-3c8e27268120",
+      "name": "Mahabali Spiritual (Hey Dukh Bhanjan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "4287-k6bk-tdbq-6hqm-2qaz",
+      "userId": "user2"
+    },
+    {
+      "id": "0c0e12f0-fce4-41fd-82d5-3c33cd3ce5ae",
+      "name": "Mahabali Spiritual (Bajarang Baan)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "q51e-u327-88ba-vx7h-57dc",
+      "userId": "user2"
+    },
+    {
+      "id": "c9a2f276-94cf-4dc2-9493-5429ffb10997",
+      "name": "1 (Hey Mahaveer)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "e5t6-cpmw-7q2v-gm77-93zs",
+      "userId": "user2"
+    },
+    {
+      "id": "8f260d19-ee24-4150-ae06-14a4cb4bcd7c",
+      "name": "1 Bajarang Baan",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "az5p-hcev-8atq-ks76-1tu1",
+      "userId": "user2"
+    },
+    {
+      "id": "fbbdabf7-ff97-4e7d-a742-37b2855b53da",
+      "name": "1 Hey Dukh Bhajan",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "m33q-ck3d-d6t5-q2k2-f4tz",
+      "userId": "user2"
+    },
+    {
+      "id": "42441ec3-71c9-42fb-a097-6a823955a477",
+      "name": "Mahabali Spiritual (Ambe tu hai jagdambe kali)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "qtu2-pkvu-yyku-vhjd-ebux",
+      "userId": "user2"
+    },
+    {
+      "id": "eb5036e0-a8c1-4bf1-b0e9-32a4890eb8e3",
+      "name": "Mahabali Devotional (Ambe tu hai jagdambe kali)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "yqcc-jz8f-hrr1-5c8t-8a70",
+      "userId": "user2"
+    },
+    {
+      "id": "734d1b62-4330-4184-91c9-a63b35ff72a2",
+      "name": "Mahabali Bhajan (Ambe tu hai jagdambe kali)",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "4ptd-zazf-8brw-dm4v-4070",
+      "userId": "user2"
+    },
+    {
+      "id": "39953a89-d7be-4c2b-a379-e9227849b884",
+      "name": "Ambe tu hai jagdambe kali 1",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "b2m4-stvh-wh2t-d5jh-761j",
+      "userId": "user2"
+    },
+    {
+      "id": "1cf8dded-ef5d-4f0b-8568-ef6db16d6ced",
+      "name": "Ambe tu hai jagdambe kali",
+      "youtubeRtmpUrl": "rtmp://a.rtmp.youtube.com/live2",
+      "streamKey": "rr6t-fvfv-yrj6-fv3s-b80z",
+      "userId": "user2"
+    }
+  ],
+  "collections": [
+    {
+      "id": "40f4efa3-ebac-475e-87d7-994a7706c34e",
+      "name": "Hey Mahaveer",
+      "profileIds": [
+        "1bfadb37-baa2-483c-9846-cdd2bb827ae0",
+        "921c58d8-291c-4b68-972f-c5181edf7384",
+        "98c0f0c5-6442-456a-9259-79b562a975a2",
+        "d8b988e9-98b1-4746-ad47-36bfbb0555b6",
+        "c9a2f276-94cf-4dc2-9493-5429ffb10997"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "0e4fa570-2a4a-4bc1-bc7e-c833cd2412aa",
+      "name": "bajrang Baan",
+      "profileIds": [
+        "acce2659-d2cf-45a8-8f91-0d03cb7079d5",
+        "c90c34f2-489f-4855-8362-f47bdc414192",
+        "749e8cf8-7b2c-45f8-a9b4-dd410cadb9ad",
+        "0c0e12f0-fce4-41fd-82d5-3c33cd3ce5ae",
+        "8f260d19-ee24-4150-ae06-14a4cb4bcd7c"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "f5244864-0548-4af1-b50e-d012319e93b4",
+      "name": "Hey Dukh Bhanjan",
+      "profileIds": [
+        "811f757c-28e0-4246-bdf5-4a2a23a2087f",
+        "064008da-7129-4fce-9406-b4ab11c37ebe",
+        "ecf0b255-ce9d-431b-a79e-8fa31373f507",
+        "35e2b14f-aabb-4866-9416-3c8e27268120",
+        "fbbdabf7-ff97-4e7d-a742-37b2855b53da"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "40a20412-4fe9-468b-8ab1-d389b0dc2fb5",
+      "name": "Hanuman Chalisa",
+      "profileIds": [
+        "ef7bcb8f-5612-4b31-8634-869a9573b1c0",
+        "1781e000-fcfb-490d-839c-74d22956052b",
+        "3c291588-70d2-4569-aebc-4ec91b3c4149"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "84a2fceb-b65d-4bfc-9f31-76ba3a8f415e",
+      "name": "Video",
+      "profileIds": [
+        "7742c745-ea0d-49d1-a949-e1271c8d7f70",
+        "3c1a2371-b433-4606-a12f-9a0b428d147e",
+        "fffe998d-be9f-468e-b33e-c4a909c4946f",
+        "a85dcdcd-bdde-45e4-b386-41e86ebf6059",
+        "84185d95-44dd-443a-8ff0-d378e43b25cb",
+        "2cb47e4c-ffb7-4a89-8f2b-cec80fac4b62",
+        "55f43444-e02a-411e-bcd8-8f1e2e3aafd4",
+        "e7ee7be1-1200-4c67-9495-f2af6f02ba3b"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "1fb249d4-566d-413b-8d8b-2fadc4d8e852",
+      "name": "Audio 3",
+      "profileIds": [
+        "758d8771-a89e-40ba-925c-85993828fa2c",
+        "63fba53c-0bfa-43a9-af6d-546b9ec96ba9",
+        "b412f17e-5b40-4459-8707-27884ab02468",
+        "3d814a5a-1f5c-41c8-bc27-1c1ebfe9927a",
+        "f7c3592c-81ed-411d-9cba-3d96da52646a",
+        "7df9f892-a0b2-440a-8663-49dafe30517c",
+        "636b5d2e-ccc2-48fc-8d4e-fab77dcd2b07"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "c763dbbe-e6d1-4c6e-b3e4-3dbe79347140",
+      "name": "Pankaj Matalbi",
+      "profileIds": [
+        "7f656e65-499c-42e6-9bdb-83b7f11ae8ff",
+        "73947ea1-4401-4700-9dbc-0dbc33a4f669",
+        "c172e637-5f3d-49f4-9aa3-dfdbc8e082f3",
+        "5c651d08-0f8d-4bbb-9f37-d8fb4c99227b",
+        "67ed4268-e573-4342-b1bc-161fa073a7e5",
+        "72e6028f-26f1-437c-84ff-b58465603493",
+        "a7e1f132-3a56-4601-bf5e-a8c9a2413ba0"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "5dfc9424-4cd5-4950-b179-a579cbc5b520",
+      "name": "Audio 1",
+      "profileIds": [
+        "9e825889-dfff-4b34-bbd4-98d228aa7295",
+        "6325faf7-4655-498c-a781-d8b83a1d9c7a",
+        "2c88577a-1838-4408-b55d-1443acd01108",
+        "62f6f791-a916-4044-b69e-92ef194df5b4",
+        "5aa0c208-7726-4271-99c7-0ef9b93fff44",
+        "f187d7de-f263-40fe-9fbe-1c9aeb9677ae",
+        "72054109-6c1d-43ae-83f1-bd874459ae03"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "0280abc9-90bf-438c-ba80-2c3175d9317f",
+      "name": "Audio 2",
+      "profileIds": [
+        "cc88b29b-227a-476c-8a66-7e3010c3c9c1",
+        "491dc5ad-b4ca-4dd2-b924-aafe2efcd957",
+        "f1075619-f00e-419e-a6b1-aa3cae3a65b0",
+        "3385b852-3a1e-406d-a467-8338eaab4bc2",
+        "8113552c-6d1d-4aa4-9a1f-2ad4e5f2929f",
+        "c007d29b-04c0-429c-877c-7344546d96f9",
+        "1742cb05-8f10-4a56-b805-ac0e3e4a26ec"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "069c686b-3853-4ade-907e-0a4c3f153dad",
+      "name": "Audio 4",
+      "profileIds": [
+        "d77fea2d-0eca-4f7f-8508-0f5cd496e221",
+        "90ce5ae8-c632-4a43-9670-1c4ecd414e72",
+        "69b713d4-c5c9-4c3a-af68-0159db50af87",
+        "619a702f-74ff-48bc-8d3e-3c7a71d74d3c",
+        "36db26fe-b212-4a90-b21c-7e10d1d40f72",
+        "377cfe60-0f3d-43df-bdde-98ee1c971090",
+        "fa9dde72-c1f6-4a10-bd71-80a549317a65"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "4614f213-8991-4c7b-8e83-e04e10bb4e5d",
+      "name": "Audio 5",
+      "profileIds": [
+        "67cda90a-4960-44ca-ae3a-fbf4b71c4ff9",
+        "dda0a704-3f91-4340-af1a-6d5435c3d088",
+        "5e739e61-af61-484b-80c3-58bcd3029302",
+        "b10d6696-77f2-4200-9ceb-0a885dda4b1b",
+        "171c0eda-39f8-41b2-bea3-6888ee3dc979",
+        "58d97df9-595e-42ec-8378-a3dee391d702",
+        "ac682760-5bb9-4da5-836f-b0e36892438a"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "ab984915-2d87-4d8f-8114-9dcf86dda96f",
+      "name": "Shiv Shambhu",
+      "profileIds": [
+        "4abe33e5-aa80-41d3-9d13-c7c20e50b8cf",
+        "f74b73b8-9f25-44ad-bc61-a03278c51304",
+        "7472aee9-205a-4ac0-b74c-0e0737377756",
+        "1ecc23d4-cee1-477e-b2e6-e38481ff27b8"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "c184e740-6a17-4ad0-a76b-221caef303f5",
+      "name": "Audio7",
+      "profileIds": [
+        "30a7ec3f-f5c9-486f-a196-db347711444b",
+        "9269eac1-6e75-4742-bc44-41794a089d4b",
+        "8c71cfeb-0bb4-482d-8673-9ca87378b733",
+        "0212eb76-af91-41e0-b6f2-4c9f33f9e14c",
+        "859742b9-b65e-484b-a096-c420a5a6b011",
+        "03a58e66-128f-4bfe-84db-18141d67189f",
+        "b565c7d1-1569-4d07-b9ee-c0a77bc10a62"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "e5dd4ec0-3715-443a-b7ec-95122f3ec495",
+      "name": "Mere Girdhar Tu Hi Sahara Hai",
+      "profileIds": [
+        "a2764e46-bc89-47fe-bee3-d967f32d223e",
+        "bad65a2f-6689-47e9-a775-dfa74c1871d1"
+      ],
+      "userId": "user2"
+    },
+    {
+      "id": "4f3689cd-1fc3-454f-a612-178c097a3a30",
+      "name": "Ambe tu hai jagdambe kali",
+      "profileIds": [
+        "42441ec3-71c9-42fb-a097-6a823955a477",
+        "eb5036e0-a8c1-4bf1-b0e9-32a4890eb8e3",
+        "734d1b62-4330-4184-91c9-a63b35ff72a2",
+        "39953a89-d7be-4c2b-a379-e9227849b884",
+        "1cf8dded-ef5d-4f0b-8568-ef6db16d6ced"
+      ],
+      "userId": "user2"
+    }
+  ],
+  "streams": [
+    {
+      "id": "9ac9f978-df57-4c2e-831a-ae2b22184f3e",
+      "name": "Bajrang Baan",
+      "profileIds": [
+        "d8bfe726-15f9-466b-a3e4-e74084ca9f31"
+      ],
+      "resolution": "480p",
+      "bitrate": "1500k",
+      "fps": "30",
+      "video": "BajrangBaanShubhamKumar.mp4",
+      "userId": "admin"
+    },
+    {
+      "id": "6f7c76d1-56d5-4152-89ae-742fdaae67bd",
+      "name": "Hanuman chalisa",
+      "profileIds": [
+        "9a5ef859-3faa-4ad0-85df-a7cdc655b5c2"
+      ],
+      "resolution": "480p",
+      "bitrate": "1500k",
+      "fps": "30",
+      "video": "hanumanchalisa2.mp4",
+      "userId": "admin"
+    },
+    {
+      "id": "86042860-fd6a-4da2-a3c2-064c1df28aa2",
+      "name": "Hanuman Ashtak",
+      "profileIds": [
+        "5eb291be-3048-4c86-9395-95cb77651008"
+      ],
+      "resolution": "480p",
+      "bitrate": "1500k",
+      "fps": "30",
+      "video": "HanumanAshtakShubhamKumar.mp4",
+      "userId": "admin"
+    },
+    {
+      "id": "f9f9425c-72b9-4beb-adba-993d7261b124",
+      "name": "Hey Mahaveer",
+      "profileIds": [
+        "62708c3b-aba3-4b82-8456-47452afb13fe"
+      ],
+      "resolution": "480p",
+      "bitrate": "1500k",
+      "fps": "30",
+      "video": "heymahaveershubhamkumar.mp4",
+      "userId": "admin"
+    },
+    {
+      "id": "b679a4cc-a1ba-4ef6-b050-6dada077cdd6",
+      "name": "Hey Mahaveer",
+      "profileIds": [],
+      "resolution": "480p",
+      "bitrate": "1500k",
+      "fps": "30",
+      "video": "heyrishu.mp4",
+      "collectionId": "40f4efa3-ebac-475e-87d7-994a7706c34e",
+      "userId": "user2"
+    },
+    {
+      "id": "cd1873d7-10fc-44de-950c-b3954dd75074",
+      "name": "Bajrang Baan",
+      "profileIds": [],
+      "resolution": "480p",
+      "bitrate": "1500k",
+      "fps": "30",
+      "video": "BajrangBaan.mp4",
+      "collectionId": "0e4fa570-2a4a-4bc1-bc7e-c833cd2412aa",
+      "userId": "user2"
+    },
+    {
+      "id": "9171bfe3-33b1-4988-80e9-3eea98b75214",
+      "name": "Hey Dukh bhanjan",
+      "profileIds": [],
+      "resolution": "480p",
+      "bitrate": "1500k",
+      "fps": "30",
+      "video": "heydukhbhanjan.mp4",
+      "collectionId": "f5244864-0548-4af1-b50e-d012319e93b4",
+      "userId": "user2"
+    },
+    {
+      "id": "28b3aa06-1542-4efa-a413-b057888c47b4",
+      "name": "Hanuman Chalisa",
+      "profileIds": [],
+      "resolution": "480p",
+      "bitrate": "1500k",
+      "fps": "30",
+      "video": "hanumanchalisa.mp4",
+      "collectionId": "40a20412-4fe9-468b-8ab1-d389b0dc2fb5",
+      "userId": "user2"
+    },
+    {
+      "id": "ed8a8ca7-70ad-4c4e-a88f-47a4ccc3fb3f",
+      "name": "Audio 1",
+      "profileIds": [],
+      "resolution": "360p",
+      "bitrate": "1000k",
+      "fps": "30",
+      "video": "audio6.mp4",
+      "collectionId": "5dfc9424-4cd5-4950-b179-a579cbc5b520",
+      "userId": "user2"
+    },
+    {
+      "id": "d2d3df94-c1d5-4609-a636-a0e5535d49ae",
+      "name": "Audio 7",
+      "profileIds": [],
+      "resolution": "360p",
+      "bitrate": "1000k",
+      "fps": "30",
+      "video": "audio7.mp4",
+      "collectionId": "c184e740-6a17-4ad0-a76b-221caef303f5",
+      "userId": "user2"
+    }
+  ],
+  "connectedChannels": [],
+  "autoTasks": [],
+  "googleApiConfig": {
+    "clientId": "",
+    "clientSecret": "",
+    "redirectUri": ""
+  },
+  "userRole": "user2",
+  "isImpersonating": false
+}
