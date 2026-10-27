@@ -111,48 +111,24 @@ export async function handleDurationCompleted(taskId: string) {
 
   // 2. Decide next state
   if (task.mode === 'loop') {
-    const cooldownMins = task.loopSettings?.cooldownMins ?? 5;
-
-    // If cooldown is 0 or negative, stop completely!
-    if (cooldownMins <= 0) {
-      addAutoLog(taskId, `Stream duration finished! Auto-stopped completely (Cooldown is 0 mins).`);
-      const updated = (getConfig().autoTasks || []).map(t => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            enabled: false,
-            state: 'idle' as const,
-            pid: undefined,
-            sessionStartTime: undefined,
-            nextEventAt: undefined,
-            activeBroadcasts: undefined
-          };
-        }
-        return t;
-      });
-      saveConfig({ autoTasks: updated });
-      return;
-    }
-
-    // Cooldown > 0: Enter cooldown break
-    const cooldownEnd = new Date(Date.now() + cooldownMins * 60 * 1000).toISOString();
-    addAutoLog(taskId, `Stream duration completed! Entering cooldown break for ${cooldownMins} minutes (Next restart: ${new Date(cooldownEnd).toLocaleTimeString()})...`);
-
+    const duration = task.loopSettings?.runDurationMins || 5;
+    addAutoLog(taskId, `Stream duration (${duration}m) complete! Stream has auto-stopped completely.`);
     const updated = (getConfig().autoTasks || []).map(t => {
       if (t.id === taskId) {
         return {
           ...t,
-          state: 'cooldown' as const,
-          nextEventAt: cooldownEnd,
+          enabled: false,
+          state: 'idle' as const,
           pid: undefined,
           sessionStartTime: undefined,
+          nextEventAt: undefined,
           activeBroadcasts: undefined
         };
       }
       return t;
     });
     saveConfig({ autoTasks: updated });
-
+    return;
   } else if (task.mode === 'scheduled') {
     addAutoLog(taskId, `Scheduled slot duration completed. Stream stopped.`);
     const updated = (getConfig().autoTasks || []).map(t => {
@@ -484,21 +460,15 @@ async function processAutomationTick() {
   for (const task of tasks) {
     if (!task.enabled) continue;
 
-    // 1. Loop Mode Handling
+    // 1. Duration Auto-Stop Mode
     if (task.mode === 'loop') {
       if (task.state === 'idle') {
-        // Start stream immediately
+        // Start stream immediately if enabled
         await startAutoStreamTask(task);
       } else if (task.state === 'streaming') {
         // Check if stream run duration is over
         if (task.nextEventAt && now >= new Date(task.nextEventAt).getTime()) {
           await handleDurationCompleted(task.id);
-        }
-      } else if (task.state === 'cooldown') {
-        // Check if cooldown period is over
-        if (task.nextEventAt && now >= new Date(task.nextEventAt).getTime()) {
-          addAutoLog(task.id, `Cooldown break completed. Restarting next loop cycle!`);
-          await startAutoStreamTask(task);
         }
       }
     }

@@ -221,7 +221,7 @@ export default function AutoStreamPage() {
       bitrate: '4000k',
       fps: '60',
       mode: 'loop',
-      loopSettings: { runDurationMins: 60, cooldownMins: 5 },
+      loopSettings: { runDurationMins: 5, cooldownMins: 0 },
       scheduleSettings: {
         startTime: '18:00',
         durationMins: 60,
@@ -526,7 +526,7 @@ export default function AutoStreamPage() {
                           {task.mode === 'loop' ? (
                             <>
                               <Repeat className="w-3 h-3 text-red-400" />
-                              <span>Loop ({task.loopSettings?.runDurationMins}m / {task.loopSettings?.cooldownMins}m)</span>
+                              <span>{task.loopSettings?.runDurationMins || 5} Mins (Auto-Stop)</span>
                             </>
                           ) : (
                             <>
@@ -785,8 +785,8 @@ export default function AutoStreamPage() {
                         }`}
                     >
                       <Repeat className="w-5 h-5" />
-                      <span className="text-xs font-bold">Loop Mode (24x7)</span>
-                      <span className="text-[10px] text-gray-500 text-center">Run duration + Cooldown break in infinite cycle</span>
+                      <span className="text-xs font-bold">Auto-Stop Duration</span>
+                      <span className="text-[10px] text-gray-500 text-center">Run for set minutes & auto-stop</span>
                     </button>
 
                     <button
@@ -804,47 +804,33 @@ export default function AutoStreamPage() {
                   </div>
 
                   {editingTask.mode === 'loop' ? (
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-gray-400 mb-1">Stream Run Duration (Mins)</label>
+                    <div className="pt-2">
+                      <label className="block text-[11px] font-semibold text-gray-300 uppercase mb-1">
+                        Stream Run Duration (Mins)
+                      </label>
+                      <div className="relative">
                         <input
                           type="number"
                           min={1}
                           max={1440}
-                          value={editingTask.loopSettings?.runDurationMins || 60}
-                          onChange={(e) => setEditingTask({
-                            ...editingTask,
-                            loopSettings: {
-                              runDurationMins: Math.max(1, parseInt(e.target.value) || 1),
-                              cooldownMins: editingTask.loopSettings?.cooldownMins !== undefined ? editingTask.loopSettings.cooldownMins : 5
-                            }
-                          })}
-                          className="w-full bg-[#181818] border border-gray-700 rounded-lg px-3 py-2 text-white text-xs"
-                        />
-                        <span className="text-[10px] text-gray-500">e.g. 5 = 5 min stream, 60 = 1 hr</span>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-semibold text-gray-400 mb-1">Cooldown Break (Mins)</label>
-                        <input
-                          type="number"
-                          min={0}
-                          max={1440}
-                          value={editingTask.loopSettings?.cooldownMins !== undefined ? editingTask.loopSettings.cooldownMins : 5}
+                          placeholder="e.g. 5 (for 5 mins), 10, 30, 60..."
+                          value={editingTask.loopSettings?.runDurationMins ?? 5}
                           onChange={(e) => {
-                            const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                            const val = e.target.value === '' ? '' : parseInt(e.target.value);
                             setEditingTask({
                               ...editingTask,
                               loopSettings: {
-                                runDurationMins: editingTask.loopSettings?.runDurationMins || 60,
-                                cooldownMins: isNaN(val) ? 0 : Math.max(0, val)
+                                runDurationMins: val === '' ? 5 : Math.max(1, isNaN(val as number) ? 5 : (val as number)),
+                                cooldownMins: 0
                               }
                             });
                           }}
-                          className="w-full bg-[#181818] border border-gray-700 rounded-lg px-3 py-2 text-white text-xs"
+                          className="w-full bg-[#181818] border border-gray-700 rounded-lg px-3 py-2 text-white text-xs font-bold focus:border-red-500 focus:outline-none"
                         />
-                        <span className="text-[10px] text-gray-500">0 = Auto-stop permanently, 5 = 5 min pause</span>
                       </div>
+                      <p className="text-[11px] text-emerald-400 mt-1.5 flex items-center space-x-1">
+                        <span>⏱ <b>Auto-Stop:</b> Stream exact jitne minute yahan likhenge (e.g. 5 min), utni der chalne ke baad automatically <b>STOP</b> ho jayegi.</span>
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-3 pt-2">
