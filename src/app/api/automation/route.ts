@@ -54,6 +54,9 @@ export async function POST(req: Request) {
     }
 
     if (action === 'start') {
+      if (task.state === 'streaming') {
+        return NextResponse.json({ success: false, message: 'Stream is already actively running for this task.' });
+      }
       const res = await startAutoStreamTask(task);
       return NextResponse.json(res);
     }

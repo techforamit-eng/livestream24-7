@@ -1086,14 +1086,21 @@ export default function AutoStreamPage() {
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-300 mb-1 flex items-center space-x-1.5">
                       <Tag className="w-3.5 h-3.5 text-red-400" />
-                      <span>YouTube Tags (Comma separated)</span>
+                      <span>YouTube Tags (Comma or dot separated)</span>
                     </label>
                     <input
                       type="text"
                       value={(editingTask.broadcastSettings?.tags || []).join(', ')}
                       onChange={(e) => {
                         const raw = e.target.value;
-                        const parsed = raw.split(',').map(t => t.trim()).filter(Boolean);
+                        let parsed: string[] = [];
+                        if (raw.includes(',') || raw.includes(';') || raw.includes('\n')) {
+                          parsed = raw.split(/[,;\n]+/).map(t => t.trim()).filter(Boolean);
+                        } else if (raw.includes('.') && !raw.includes(' ')) {
+                          parsed = raw.split('.').map(t => t.trim()).filter(Boolean);
+                        } else {
+                          parsed = raw.split(',').map(t => t.trim()).filter(Boolean);
+                        }
                         setEditingTask({
                           ...editingTask,
                           broadcastSettings: {
@@ -1106,6 +1113,17 @@ export default function AutoStreamPage() {
                       placeholder="bhajan, live, music, 24/7, bhakti, hindi songs"
                     />
                     <span className="text-[10px] text-gray-500 mt-0.5 block">Separate tags with commas. e.g.: bhajan, live, devotional, 24/7</span>
+
+                    {/* Visual Tag Badges Preview */}
+                    {editingTask.broadcastSettings?.tags && editingTask.broadcastSettings.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {editingTask.broadcastSettings.tags.map((tg, idx) => (
+                          <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded bg-red-500/10 text-red-300 border border-red-500/20 text-[10px] font-medium">
+                            #{tg}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Category & Privacy */}

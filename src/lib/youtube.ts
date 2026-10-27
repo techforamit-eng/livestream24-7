@@ -222,6 +222,18 @@ export async function createLiveBroadcastAndStream(channelId: string, options: {
   // 4. Update Video Tags & Category if specified
   if (options.tags && options.tags.length > 0) {
     try {
+      // Split tags by comma, semicolon, newline, or dots (when typed like bhajan.livestream.test)
+      const formattedTags: string[] = options.tags.flatMap(t => {
+        if (typeof t !== 'string') return [];
+        if (t.includes(',') || t.includes(';') || t.includes('\n')) {
+          return t.split(/[,;\n]+/).map(s => s.trim());
+        }
+        if (t.includes('.') && !t.includes(' ')) {
+          return t.split('.').map(s => s.trim());
+        }
+        return [t.trim()];
+      }).filter(Boolean);
+
       await youtube.videos.update({
         part: ['snippet'],
         requestBody: {
@@ -230,7 +242,7 @@ export async function createLiveBroadcastAndStream(channelId: string, options: {
             title: options.title || `Live Stream - ${new Date().toLocaleString()}`,
             description: options.description || 'Automated Live Stream via VMagic',
             categoryId: options.categoryId || '10', // Default 10 = Music
-            tags: options.tags
+            tags: formattedTags.length > 0 ? formattedTags : options.tags
           }
         }
       });

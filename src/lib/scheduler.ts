@@ -44,6 +44,13 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
   try {
     addAutoLog(task.id, `Preparing stream session for task "${task.name}"...`);
 
+    // Guard against duplicate concurrent executions
+    const existing = activeAutoTasks.get(task.id);
+    if (existing && existing.process && existing.process.pid) {
+      addAutoLog(task.id, 'Task is already actively streaming. Duplicate start ignored.');
+      return { success: false, message: 'Stream is already actively running.' };
+    }
+
     // 1. Check video
     const role = task.userId || 'admin';
     const videoPath = path.join(VIDEOS_DIR, role, task.video);
@@ -52,13 +59,14 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       return { success: false, message: `Video file "${task.video}" not found on disk.` };
     }
 
-    // 2. Check target channels
-    if (!task.channelIds || task.channelIds.length === 0) {
+    // 2. Check target channels (Deduplicated so multiple broadcasts aren't created for the same channel)
+    const uniqueChannels = Array.from(new Set(task.channelIds || []));
+    if (uniqueChannels.length === 0) {
       addAutoLog(task.id, `Error: No target YouTube channels selected.`);
       return { success: false, message: 'No target YouTube channels selected.' };
     }
 
-    addAutoLog(task.id, `Connecting to ${task.channelIds.length} YouTube channel(s) via API...`);
+    addAutoLog(task.id, `Connecting to ${uniqueChannels.length} YouTube channel(s) via API...`);
     const activeBroadcasts: Record<string, { broadcastId: string; streamId: string; streamKey: string; rtmpUrl: string }> = {};
     const endpoints: { url: string; key: string }[] = [];
 
@@ -67,8 +75,8 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       ? path.join(process.cwd(), 'public', 'thumbnails', role, task.broadcastSettings.thumbnail)
       : undefined;
 
-    // Create YouTube broadcast & stream for each channel
-    for (const channelId of task.channelIds) {
+    // Create YouTube broadcast & stream for each unique channel
+    for (const channelId of uniqueChannels) {
       try {
         const streamInfo = await createLiveBroadcastAndStream(channelId, {
           title: task.broadcastSettings?.title || task.name,
