@@ -41,6 +41,7 @@ export default function AutoStreamPage() {
   const [copiedRedirect, setCopiedRedirect] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [tagsInputText, setTagsInputText] = useState('');
+  const [isCleaning, setIsCleaning] = useState(false);
 
   const fetchTasks = async () => {
     try {
@@ -166,6 +167,31 @@ export default function AutoStreamPage() {
       }
     } catch (e) {
       setMessage({ text: 'Failed to initiate Google login', type: 'error' });
+    }
+  };
+
+  const handleCleanupStaleBroadcasts = async () => {
+    if (!confirm('This will end/delete any stale or duplicate Live and Upcoming broadcasts in YouTube Studio for your connected channels. Do you want to proceed?')) {
+      return;
+    }
+    setIsCleaning(true);
+    try {
+      const res = await fetch('/api/youtube/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: data.message || `Cleaned ${data.cleanedCount || 0} broadcast(s) successfully!`, type: 'success' });
+        fetchTasks();
+      } else {
+        setMessage({ text: data.message || 'Cleanup failed', type: 'error' });
+      }
+    } catch (err: any) {
+      setMessage({ text: 'Error cleaning broadcasts: ' + err.message, type: 'error' });
+    } finally {
+      setIsCleaning(false);
     }
   };
 
@@ -362,7 +388,17 @@ export default function AutoStreamPage() {
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleCleanupStaleBroadcasts}
+            disabled={isCleaning}
+            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/60 text-amber-300 text-sm font-semibold transition-all hover:bg-amber-500/20 disabled:opacity-50"
+            title="End and delete all stale/duplicate broadcasts in YouTube Studio"
+          >
+            <RotateCw className={`w-4 h-4 ${isCleaning ? 'animate-spin text-amber-400' : 'text-amber-400'}`} />
+            <span>{isCleaning ? 'Cleaning YouTube...' : '🧹 Clean Stale Streams'}</span>
+          </button>
+
           <button
             onClick={() => setIsApiSettingsOpen(true)}
             className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-700 hover:border-gray-600 text-gray-200 text-sm font-semibold transition-all hover:bg-gray-800"
@@ -951,7 +987,7 @@ export default function AutoStreamPage() {
                                 value={slot.durationMins ?? 15}
                                 onChange={(e) => {
                                   const val = e.target.value === '' ? '' : parseInt(e.target.value);
-                                  const updatedSlots = (editingTask.scheduleSettings?.timeSlots || []).map((s, i) => 
+                                  const updatedSlots = (editingTask.scheduleSettings?.timeSlots || []).map((s, i) =>
                                     i === index ? { ...s, durationMins: val === '' ? 15 : Math.max(1, isNaN(val as number) ? 15 : (val as number)) } : s
                                   );
                                   setEditingTask({

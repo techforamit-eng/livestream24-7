@@ -84,7 +84,7 @@ export interface AutoStreamTask {
     categoryId?: string;
   };
   enabled: boolean;
-  state: 'idle' | 'streaming' | 'cooldown' | 'scheduled';
+  state: 'idle' | 'starting' | 'streaming' | 'cooldown' | 'scheduled';
   activeSlotId?: string;
   sessionStartTime?: string;
   nextEventAt?: string;

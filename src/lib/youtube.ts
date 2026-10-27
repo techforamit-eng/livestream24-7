@@ -184,7 +184,7 @@ export async function createLiveBroadcastAndStream(channelId: string, options: {
       },
       contentDetails: {
         enableAutoStart: true,
-        enableAutoStop: true,
+        enableAutoStop: false, // Must be false so liveBroadcasts.transition to 'complete' is permitted by YouTube API
         enableDvr: true,
         recordFromStart: true
       }
@@ -289,19 +289,92 @@ export async function transitionBroadcast(channelId: string, broadcastId: string
     });
     return { success: true, status: res.data.status?.lifeCycleStatus };
   } catch (err: any) {
-    // Some transitions might throw if already completed or auto-transitioned
     return { success: false, message: err.message };
   }
 }
 
 /**
- * Delete a broadcast (optional cleanup)
+ * Complete a live broadcast, or delete if it was never started / upcoming
+ */
+export async function endOrCleanupBroadcast(channelId: string, broadcastId: string) {
+  try {
+    const youtube = await getAuthenticatedYouTube(channelId);
+    
+    // 1. Try transition to 'complete' if live or testing
+    try {
+      const res = await youtube.liveBroadcasts.transition({
+        id: broadcastId,
+        broadcastStatus: 'complete',
+        part: ['id', 'status']
+      });
+      return { success: true, action: 'completed', status: res.data.status?.lifeCycleStatus };
+    } catch (transErr: any) {
+      // If transition failed (e.g. broadcast was 'ready' / upcoming), delete it cleanly
+      await youtube.liveBroadcasts.delete({ id: broadcastId });
+      return { success: true, action: 'deleted' };
+    }
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Delete a broadcast
  */
 export async function deleteBroadcast(channelId: string, broadcastId: string) {
   try {
     const youtube = await getAuthenticatedYouTube(channelId);
     await youtube.liveBroadcasts.delete({ id: broadcastId });
     return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Clean up all duplicate or stale broadcasts on a YouTube channel
+ */
+export async function cleanupChannelBroadcasts(channelId: string) {
+  try {
+    const youtube = await getAuthenticatedYouTube(channelId);
+    const listRes = await youtube.liveBroadcasts.list({
+      part: ['id', 'snippet', 'status'],
+      broadcastType: 'all',
+      mine: true,
+      maxResults: 25
+    });
+
+    const items = listRes.data.items || [];
+    let cleanedCount = 0;
+
+    for (const item of items) {
+      const bId = item.id;
+      const status = item.status?.lifeCycleStatus;
+      if (!bId) continue;
+
+      if (status === 'live' || status === 'testing') {
+        try {
+          await youtube.liveBroadcasts.transition({
+            id: bId,
+            broadcastStatus: 'complete',
+            part: ['id', 'status']
+          });
+          cleanedCount++;
+        } catch (e) {
+          try {
+            await youtube.liveBroadcasts.delete({ id: bId });
+            cleanedCount++;
+          } catch (e2) {}
+        }
+      } else if (status === 'ready' || status === 'created') {
+        try {
+          await youtube.liveBroadcasts.delete({ id: bId });
+          cleanedCount++;
+        } catch (e) {}
+      }
+    }
+
+    return { success: true, cleanedCount, message: `Successfully cleaned ${cleanedCount} duplicate/stale broadcast(s) on YouTube!` };
   } catch (err: any) {
     return { success: false, message: err.message };
   }

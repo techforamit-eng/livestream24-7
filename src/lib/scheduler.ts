@@ -2,11 +2,15 @@ import { spawn, ChildProcess, execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { getConfig, saveConfig, AutoStreamTask } from './config';
-import { createLiveBroadcastAndStream, transitionBroadcast } from './youtube';
+import { createLiveBroadcastAndStream, transitionBroadcast, endOrCleanupBroadcast } from './youtube';
 import { getFFmpegPath } from './ffmpegPath';
 
 const VIDEOS_DIR = path.join(process.cwd(), 'public', 'videos');
 const AUTO_PIDS_FILE = path.join(process.cwd(), 'active_auto_pids.json');
+
+// Global mutex to prevent duplicate parallel start executions
+const startingTasks: Set<string> = (global as any).startingTasks || new Set<string>();
+(global as any).startingTasks = startingTasks;
 
 export interface ActiveAutoTaskInfo {
   process?: ChildProcess;
@@ -171,16 +175,33 @@ export async function handleDurationCompleted(taskId: string) {
  * Start streaming for an automated task
  */
 export async function startAutoStreamTask(task: AutoStreamTask, customDurationMins?: number, slotId?: string): Promise<{ success: boolean; message: string }> {
+  // 1. Guard against duplicate concurrent executions
+  if (startingTasks.has(task.id)) {
+    addAutoLog(task.id, 'Task initialization already in progress. Duplicate start call ignored.');
+    return { success: false, message: 'Stream initialization is already in progress.' };
+  }
+
+  const existingPid = getTaskPid(task.id);
+  const existing = activeAutoTasks.get(task.id);
+  if ((existing && existing.process && existing.process.pid) || (existingPid && existingPid > 0 && task.state === 'streaming')) {
+    addAutoLog(task.id, 'Task is already actively streaming. Duplicate start ignored.');
+    return { success: false, message: 'Stream is already actively running.' };
+  }
+
+  // Acquire lock immediately
+  startingTasks.add(task.id);
+
   try {
     addAutoLog(task.id, `Preparing stream session for task "${task.name}"...`);
 
-    // Guard against duplicate concurrent executions
-    const existingPid = getTaskPid(task.id);
-    const existing = activeAutoTasks.get(task.id);
-    if ((existing && existing.process && existing.process.pid) || (existingPid && existingPid > 0 && task.state === 'streaming')) {
-      addAutoLog(task.id, 'Task is already actively streaming. Duplicate start ignored.');
-      return { success: false, message: 'Stream is already actively running.' };
-    }
+    // Mark task state as 'starting' in config immediately to prevent scheduler ticks or API hits from re-triggering
+    const preUpdated = (getConfig().autoTasks || []).map(t => {
+      if (t.id === task.id) {
+        return { ...t, state: 'starting' as const };
+      }
+      return t;
+    });
+    saveConfig({ autoTasks: preUpdated });
 
     // Clear previous timer if any
     if (existing?.stopTimer) {
@@ -188,11 +209,27 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       existing.stopTimer = undefined;
     }
 
+    // Clean up any lingering previous broadcasts for this task to avoid YouTube duplicates
+    if (task.activeBroadcasts) {
+      for (const [chId, bInfo] of Object.entries(task.activeBroadcasts)) {
+        if (bInfo?.broadcastId) {
+          try {
+            await endOrCleanupBroadcast(chId, bInfo.broadcastId);
+          } catch (e) {}
+        }
+      }
+    }
+
     // 1. Check video
     const role = task.userId || 'admin';
     const videoPath = path.join(VIDEOS_DIR, role, task.video);
     if (!fs.existsSync(videoPath)) {
       addAutoLog(task.id, `Error: Video file "${task.video}" not found on disk.`);
+      const resetTasks = (getConfig().autoTasks || []).map(t => {
+        if (t.id === task.id) return { ...t, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
+        return t;
+      });
+      saveConfig({ autoTasks: resetTasks });
       return { success: false, message: `Video file "${task.video}" not found on disk.` };
     }
 
@@ -200,6 +237,11 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     const uniqueChannels = Array.from(new Set(task.channelIds || []));
     if (uniqueChannels.length === 0) {
       addAutoLog(task.id, `Error: No target YouTube channels selected.`);
+      const resetTasks = (getConfig().autoTasks || []).map(t => {
+        if (t.id === task.id) return { ...t, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
+        return t;
+      });
+      saveConfig({ autoTasks: resetTasks });
       return { success: false, message: 'No target YouTube channels selected.' };
     }
 
@@ -233,6 +275,11 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
 
     if (endpoints.length === 0) {
       addAutoLog(task.id, `Error: Could not create broadcasts on any channel.`);
+      const resetTasks = (getConfig().autoTasks || []).map(t => {
+        if (t.id === task.id) return { ...t, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
+        return t;
+      });
+      saveConfig({ autoTasks: resetTasks });
       return { success: false, message: 'Could not create broadcasts on any connected channel.' };
     }
 
@@ -396,7 +443,14 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
 
   } catch (err: any) {
     addAutoLog(task.id, `Failed to start stream: ${err.message}`);
+    const resetTasks = (getConfig().autoTasks || []).map(t => {
+      if (t.id === task.id) return { ...t, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
+      return t;
+    });
+    saveConfig({ autoTasks: resetTasks });
     return { success: false, message: err.message };
+  } finally {
+    startingTasks.delete(task.id);
   }
 }
 
@@ -426,7 +480,7 @@ export async function stopAutoStreamTask(taskId: string, reason: string = 'Sessi
       active.pid = undefined;
     }
 
-    // 2. Complete YouTube broadcasts
+    // 2. Complete/clean YouTube broadcasts
     const config = getConfig();
     const task = (config.autoTasks || []).find(t => t.id === taskId);
     const broadcasts = active?.activeBroadcasts || task?.activeBroadcasts || {};
@@ -434,14 +488,14 @@ export async function stopAutoStreamTask(taskId: string, reason: string = 'Sessi
     for (const [channelId, info] of Object.entries(broadcasts)) {
       if (info && info.broadcastId) {
         try {
-          const res = await transitionBroadcast(channelId, info.broadcastId, 'complete');
+          const res = await endOrCleanupBroadcast(channelId, info.broadcastId);
           if (res.success) {
-            addAutoLog(taskId, `Completed YouTube broadcast ${info.broadcastId} for channel ${channelId}`);
+            addAutoLog(taskId, `Ended/Cleaned YouTube broadcast ${info.broadcastId} for channel ${channelId} (${res.action || 'done'})`);
           } else {
-            addAutoLog(taskId, `Broadcast status note: ${res.message || 'Already complete'}`);
+            addAutoLog(taskId, `Broadcast status note: ${res.message || 'Already complete or deleted'}`);
           }
         } catch (e: any) {
-          addAutoLog(taskId, `Error completing YouTube broadcast: ${e.message}`);
+          addAutoLog(taskId, `Error ending/cleaning YouTube broadcast: ${e.message}`);
         }
       }
     }
@@ -481,7 +535,7 @@ async function processAutomationTick() {
 
     // 1. Loop Mode Handling (Duration Run -> Cooldown Break -> Auto-Restart)
     if (task.mode === 'loop') {
-      if (task.state === 'idle') {
+      if (task.state === 'idle' && !startingTasks.has(task.id)) {
         // Start stream immediately if enabled
         await startAutoStreamTask(task);
       } else if (task.state === 'streaming') {
@@ -489,7 +543,7 @@ async function processAutomationTick() {
         if (task.nextEventAt && now >= new Date(task.nextEventAt).getTime()) {
           await handleDurationCompleted(task.id);
         }
-      } else if (task.state === 'cooldown') {
+      } else if (task.state === 'cooldown' && !startingTasks.has(task.id)) {
         // Check if cooldown break is over
         if (task.nextEventAt && now >= new Date(task.nextEventAt).getTime()) {
           addAutoLog(task.id, `Cooldown break completed! Restarting loop cycle...`);
@@ -554,7 +608,7 @@ async function processAutomationTick() {
           }
 
           const [slotH, slotM] = (slot.startTime || '18:00').split(':').map(Number);
-          if (currentH === slotH && currentM === slotM) {
+          if (currentH === slotH && currentM === slotM && !startingTasks.has(task.id) && task.state !== 'starting') {
             const lastStart = task.sessionStartTime ? new Date(task.sessionStartTime).getTime() : 0;
             // Prevent multiple triggers within the same 2 minutes
             if (now - lastStart > 120 * 1000) {

@@ -54,18 +54,18 @@ export async function POST(req: Request) {
     }
 
     if (action === 'start') {
-      if (task.state === 'streaming') {
-        return NextResponse.json({ success: false, message: 'Stream is already actively running for this task.' });
+      if (task.state === 'streaming' || task.state === 'starting') {
+        return NextResponse.json({ success: false, message: 'Stream is already actively running or starting for this task.' });
       }
       const updated = (getConfig().autoTasks || []).map(t => {
         if (t.id === taskId) {
-          return { ...t, enabled: true };
+          return { ...t, enabled: true, state: 'starting' as const };
         }
         return t;
       });
       saveConfig({ autoTasks: updated });
       const currentTask = (getConfig().autoTasks || []).find(t => t.id === taskId) || task;
-      const res = await startAutoStreamTask({ ...currentTask, enabled: true });
+      const res = await startAutoStreamTask({ ...currentTask, enabled: true, state: 'starting' });
       return NextResponse.json(res);
     }
 
