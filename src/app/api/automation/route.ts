@@ -57,7 +57,15 @@ export async function POST(req: Request) {
       if (task.state === 'streaming') {
         return NextResponse.json({ success: false, message: 'Stream is already actively running for this task.' });
       }
-      const res = await startAutoStreamTask(task);
+      const updated = (getConfig().autoTasks || []).map(t => {
+        if (t.id === taskId) {
+          return { ...t, enabled: true };
+        }
+        return t;
+      });
+      saveConfig({ autoTasks: updated });
+      const currentTask = (getConfig().autoTasks || []).find(t => t.id === taskId) || task;
+      const res = await startAutoStreamTask({ ...currentTask, enabled: true });
       return NextResponse.json(res);
     }
 
@@ -67,6 +75,7 @@ export async function POST(req: Request) {
         if (t.id === taskId) {
           return {
             ...t,
+            enabled: false, // Turn OFF so it never auto-recreates!
             state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any,
             sessionStartTime: undefined,
             nextEventAt: undefined,
