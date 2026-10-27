@@ -675,27 +675,28 @@ export default function AutoStreamPage() {
       {/* Task Creation / Edit Modal */}
       <AnimatePresence>
         {isTaskModalOpen && editingTask && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-hidden">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#181818] border border-gray-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl my-8 space-y-6"
+              className="bg-[#181818] border border-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden"
             >
-              <div className="flex items-center justify-between border-b border-gray-800 pb-4">
-                <h3 className="text-xl font-bold text-white flex items-center space-x-2">
+              <div className="flex items-center justify-between border-b border-gray-800 p-4 sm:p-5 shrink-0 bg-[#181818]">
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-2">
                   <Zap className="w-5 h-5 text-red-500" />
                   <span>{editingTask.id ? 'Edit Auto Task' : 'Create Auto Stream Task'}</span>
                 </h3>
                 <button
+                  type="button"
                   onClick={() => setIsTaskModalOpen(false)}
-                  className="text-gray-400 hover:text-white p-1"
+                  className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   ✕
                 </button>
               </div>
 
-              <form onSubmit={handleSaveTask} className="space-y-5">
+              <form id="auto-stream-form" onSubmit={handleSaveTask} className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1">
                 {/* Task Name */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Task Name</label>
@@ -1265,24 +1266,26 @@ export default function AutoStreamPage() {
                   </div>
                 </div>
 
-                {/* Modal Buttons */}
-                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-800">
-                  <button
-                    type="button"
-                    onClick={() => setIsTaskModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-semibold transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold shadow-lg shadow-red-900/30 transition-all"
-                  >
-                    {loading ? 'Saving...' : 'Save Task'}
-                  </button>
-                </div>
               </form>
+
+              {/* Fixed Modal Footer Buttons */}
+              <div className="flex items-center justify-end space-x-3 p-4 border-t border-gray-800 shrink-0 bg-[#141414] rounded-b-2xl">
+                <button
+                  type="button"
+                  onClick={() => setIsTaskModalOpen(false)}
+                  className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs sm:text-sm font-semibold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  form="auto-stream-form"
+                  disabled={loading}
+                  className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-red-900/30 transition-all"
+                >
+                  {loading ? 'Saving...' : 'Save Task'}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -1291,27 +1294,28 @@ export default function AutoStreamPage() {
       {/* Google API Settings Modal */}
       <AnimatePresence>
         {isApiSettingsOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-hidden">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#181818] border border-gray-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl space-y-6"
+              className="bg-[#181818] border border-gray-800 rounded-2xl w-full max-w-xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden"
             >
-              <div className="flex items-center justify-between border-b border-gray-800 pb-4">
-                <h3 className="text-xl font-bold text-white flex items-center space-x-2">
+              <div className="flex items-center justify-between border-b border-gray-800 p-4 sm:p-5 shrink-0 bg-[#181818]">
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-2">
                   <Settings className="w-5 h-5 text-red-500" />
                   <span>Google Cloud / YouTube API Settings</span>
                 </h3>
                 <button
+                  type="button"
                   onClick={() => setIsApiSettingsOpen(false)}
-                  className="text-gray-400 hover:text-white p-1"
+                  className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   ✕
                 </button>
               </div>
 
-              <form onSubmit={handleSaveApiSettings} className="space-y-4">
+              <form id="api-settings-form" onSubmit={handleSaveApiSettings} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
                 <div>
                   <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Client ID</label>
                   <input
@@ -1375,24 +1379,26 @@ export default function AutoStreamPage() {
                   <p>3. Create OAuth 2.0 Credentials (Web application) and paste the Redirect URI above.</p>
                   <p>4. Add your YouTube Gmail account to <b>Test Users</b> in OAuth Consent Screen.</p>
                 </div>
-
-                <div className="flex items-center justify-end space-x-3 pt-3 border-t border-gray-800">
-                  <button
-                    type="button"
-                    onClick={() => setIsApiSettingsOpen(false)}
-                    className="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold transition-all"
-                  >
-                    Close
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-md"
-                  >
-                    {loading ? 'Saving...' : 'Save Settings'}
-                  </button>
-                </div>
               </form>
+
+              {/* Fixed Modal Footer Buttons */}
+              <div className="flex items-center justify-end space-x-3 p-4 border-t border-gray-800 shrink-0 bg-[#141414] rounded-b-2xl">
+                <button
+                  type="button"
+                  onClick={() => setIsApiSettingsOpen(false)}
+                  className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs sm:text-sm font-semibold transition-all"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  form="api-settings-form"
+                  disabled={loading}
+                  className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs sm:text-sm font-bold transition-all shadow-md"
+                >
+                  {loading ? 'Saving...' : 'Save Settings'}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
