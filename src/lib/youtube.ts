@@ -222,17 +222,19 @@ export async function createLiveBroadcastAndStream(channelId: string, options: {
   // 4. Update Video Tags & Category if specified
   if (options.tags && options.tags.length > 0) {
     try {
-      // Split tags by comma, semicolon, newline, or dots (when typed like bhajan.livestream.test)
+      // Split tags by comma, semicolon, newline, or dots and remove any '#' symbols (pure tags)
       const formattedTags: string[] = options.tags.flatMap(t => {
         if (typeof t !== 'string') return [];
+        let items: string[] = [];
         if (t.includes(',') || t.includes(';') || t.includes('\n')) {
-          return t.split(/[,;\n]+/).map(s => s.trim());
+          items = t.split(/[,;\n]+/);
+        } else if (t.includes('.') && !t.includes(' ')) {
+          items = t.split('.');
+        } else {
+          items = [t];
         }
-        if (t.includes('.') && !t.includes(' ')) {
-          return t.split('.').map(s => s.trim());
-        }
-        return [t.trim()];
-      }).filter(Boolean);
+        return items.map(s => s.replace(/^#+/, '').trim()).filter(Boolean);
+      });
 
       await youtube.videos.update({
         part: ['snippet'],

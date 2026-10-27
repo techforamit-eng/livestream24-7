@@ -1095,11 +1095,11 @@ export default function AutoStreamPage() {
                         const raw = e.target.value;
                         let parsed: string[] = [];
                         if (raw.includes(',') || raw.includes(';') || raw.includes('\n')) {
-                          parsed = raw.split(/[,;\n]+/).map(t => t.trim()).filter(Boolean);
+                          parsed = raw.split(/[,;\n]+/).map(t => t.replace(/^#+/, '').trim()).filter(Boolean);
                         } else if (raw.includes('.') && !raw.includes(' ')) {
-                          parsed = raw.split('.').map(t => t.trim()).filter(Boolean);
+                          parsed = raw.split('.').map(t => t.replace(/^#+/, '').trim()).filter(Boolean);
                         } else {
-                          parsed = raw.split(',').map(t => t.trim()).filter(Boolean);
+                          parsed = raw.split(',').map(t => t.replace(/^#+/, '').trim()).filter(Boolean);
                         }
                         setEditingTask({
                           ...editingTask,
@@ -1112,14 +1112,14 @@ export default function AutoStreamPage() {
                       className="w-full bg-[#181818] border border-gray-700 rounded-lg px-3 py-2 text-white text-xs font-mono focus:border-red-500 focus:outline-none"
                       placeholder="bhajan, live, music, 24/7, bhakti, hindi songs"
                     />
-                    <span className="text-[10px] text-gray-500 mt-0.5 block">Separate tags with commas. e.g.: bhajan, live, devotional, 24/7</span>
+                    <span className="text-[10px] text-gray-500 mt-0.5 block">Separate tags with commas. Tags will be created clean without hashtags (#).</span>
 
-                    {/* Visual Tag Badges Preview */}
+                    {/* Visual Tag Badges Preview (Pure tags without #) */}
                     {editingTask.broadcastSettings?.tags && editingTask.broadcastSettings.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <div className="flex flex-wrap gap-1.5 mt-2">
                         {editingTask.broadcastSettings.tags.map((tg, idx) => (
-                          <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded bg-red-500/10 text-red-300 border border-red-500/20 text-[10px] font-medium">
-                            #{tg}
+                          <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded bg-gray-800 text-gray-200 border border-gray-700 text-[11px] font-medium">
+                            {tg.replace(/^#+/, '').trim()}
                           </span>
                         ))}
                       </div>
