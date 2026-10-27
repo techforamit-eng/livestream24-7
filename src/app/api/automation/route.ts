@@ -145,8 +145,8 @@ export async function POST(req: Request) {
           fps: task.fps || t.fps,
           mode: task.mode || t.mode,
           loopSettings: task.loopSettings ? {
-            runDurationMins: task.loopSettings.runDurationMins || 60,
-            cooldownMins: task.loopSettings.cooldownMins !== undefined ? task.loopSettings.cooldownMins : 5
+            runDurationMins: Number(task.loopSettings.runDurationMins) || 5,
+            cooldownMins: Number(task.loopSettings.cooldownMins) || 2
           } : t.loopSettings,
           scheduleSettings: task.scheduleSettings || t.scheduleSettings,
           broadcastSettings: task.broadcastSettings || t.broadcastSettings,
@@ -172,9 +172,9 @@ export async function POST(req: Request) {
       fps: task.fps || '60',
       mode: task.mode || 'loop',
       loopSettings: task.loopSettings ? {
-        runDurationMins: task.loopSettings.runDurationMins || 60,
-        cooldownMins: task.loopSettings.cooldownMins !== undefined ? task.loopSettings.cooldownMins : 5
-      } : { runDurationMins: 60, cooldownMins: 5 },
+        runDurationMins: Number(task.loopSettings.runDurationMins) || 5,
+        cooldownMins: Number(task.loopSettings.cooldownMins) || 2
+      } : { runDurationMins: 5, cooldownMins: 2 },
       scheduleSettings: task.scheduleSettings || {
         startTime: '18:00',
         durationMins: 60,
