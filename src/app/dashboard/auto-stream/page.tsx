@@ -224,9 +224,10 @@ export default function AutoStreamPage() {
       loopSettings: { runDurationMins: 5, cooldownMins: 2 },
       scheduleSettings: {
         startTime: '18:00',
-        durationMins: 60,
+        durationMins: 15,
+        timezone: typeof window !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'Asia/Kolkata',
         timeSlots: [
-          { id: 'slot-1', label: 'Slot 1', startTime: '18:00', durationMins: 60 }
+          { id: 'slot-1', label: 'Slot 1', startTime: '18:00', durationMins: 15 }
         ]
       },
       broadcastSettings: {
@@ -946,15 +947,19 @@ export default function AutoStreamPage() {
                                 type="number"
                                 min={1}
                                 max={1440}
-                                value={slot.durationMins || 60}
+                                placeholder="e.g. 5, 15, 60"
+                                value={slot.durationMins ?? 15}
                                 onChange={(e) => {
-                                  const updatedSlots = (editingTask.scheduleSettings?.timeSlots || []).map((s, i) => i === index ? { ...s, durationMins: parseInt(e.target.value) || 60 } : s);
+                                  const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                                  const updatedSlots = (editingTask.scheduleSettings?.timeSlots || []).map((s, i) => 
+                                    i === index ? { ...s, durationMins: val === '' ? 15 : Math.max(1, isNaN(val as number) ? 15 : (val as number)) } : s
+                                  );
                                   setEditingTask({
                                     ...editingTask,
                                     scheduleSettings: { ...editingTask.scheduleSettings!, timeSlots: updatedSlots }
                                   });
                                 }}
-                                className="w-full bg-[#111] border border-gray-800 rounded-lg px-2.5 py-1.5 text-white text-xs"
+                                className="w-full bg-[#111] border border-gray-800 rounded-lg px-2.5 py-1.5 text-white text-xs font-bold focus:border-red-500 focus:outline-none"
                               />
                             </div>
 
@@ -976,6 +981,15 @@ export default function AutoStreamPage() {
                             )}
                           </div>
                         ))}
+                      </div>
+
+                      <div className="p-2.5 bg-blue-950/20 border border-blue-500/20 rounded-xl text-[11px] flex flex-wrap items-center justify-between gap-1">
+                        <span className="text-blue-300">
+                          ⏱ Har slot apne <b>Start Time</b> par start hoga aur jitna <b>Duration (mins)</b> aapne dala hai (e.g. 5 min ya 15 min), utni der chalne ke baad automatically <b>STOP</b> ho jayega.
+                        </span>
+                        <span className="text-gray-400 font-mono text-[10px]">
+                          Clock Timezone: {editingTask.scheduleSettings?.timezone || (typeof window !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'Asia/Kolkata')}
+                        </span>
                       </div>
                     </div>
                   )}

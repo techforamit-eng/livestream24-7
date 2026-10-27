@@ -148,7 +148,20 @@ export async function POST(req: Request) {
             runDurationMins: Number(task.loopSettings.runDurationMins) || 5,
             cooldownMins: Number(task.loopSettings.cooldownMins) || 2
           } : t.loopSettings,
-          scheduleSettings: task.scheduleSettings || t.scheduleSettings,
+          scheduleSettings: task.scheduleSettings ? {
+            ...t.scheduleSettings,
+            ...task.scheduleSettings,
+            timezone: task.scheduleSettings.timezone || t.scheduleSettings?.timezone || 'Asia/Kolkata',
+            timeSlots: task.scheduleSettings.timeSlots && task.scheduleSettings.timeSlots.length > 0 
+              ? task.scheduleSettings.timeSlots.map((s: any) => ({
+                  id: s.id || uuidv4(),
+                  label: s.label || 'Scheduled Slot',
+                  startTime: s.startTime || '18:00',
+                  durationMins: Number(s.durationMins) || 15,
+                  days: s.days
+                }))
+              : t.scheduleSettings?.timeSlots
+          } : t.scheduleSettings,
           broadcastSettings: task.broadcastSettings || t.broadcastSettings,
           enabled: task.enabled !== undefined ? task.enabled : t.enabled,
         };
@@ -175,12 +188,25 @@ export async function POST(req: Request) {
         runDurationMins: Number(task.loopSettings.runDurationMins) || 5,
         cooldownMins: Number(task.loopSettings.cooldownMins) || 2
       } : { runDurationMins: 5, cooldownMins: 2 },
-      scheduleSettings: task.scheduleSettings || {
+      scheduleSettings: task.scheduleSettings ? {
+        startTime: task.scheduleSettings.startTime || '18:00',
+        durationMins: Number(task.scheduleSettings.durationMins) || 15,
+        timezone: task.scheduleSettings.timezone || 'Asia/Kolkata',
+        days: task.scheduleSettings.days,
+        timeSlots: task.scheduleSettings.timeSlots && task.scheduleSettings.timeSlots.length > 0 
+          ? task.scheduleSettings.timeSlots.map((s: any) => ({
+              id: s.id || uuidv4(),
+              label: s.label || 'Scheduled Slot',
+              startTime: s.startTime || '18:00',
+              durationMins: Number(s.durationMins) || 15,
+              days: s.days
+            }))
+          : [{ id: uuidv4(), label: 'Daily Stream 1', startTime: '18:00', durationMins: 15 }]
+      } : {
         startTime: '18:00',
-        durationMins: 60,
-        timeSlots: [
-          { id: uuidv4(), label: 'Daily Stream 1', startTime: '18:00', durationMins: 60 }
-        ]
+        durationMins: 15,
+        timezone: 'Asia/Kolkata',
+        timeSlots: [{ id: uuidv4(), label: 'Daily Stream 1', startTime: '18:00', durationMins: 15 }]
       },
       broadcastSettings: task.broadcastSettings || {
         title: task.name || '24/7 Live Stream',

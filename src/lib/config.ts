@@ -73,6 +73,7 @@ export interface AutoStreamTask {
     durationMins: number; // 60 or 120 (fallback)
     timeSlots?: ScheduleTimeSlot[]; // multiple schedule slots per day!
     days?: number[]; // [0,1,2,3,4,5,6] (Sunday=0)
+    timezone?: string; // e.g. "Asia/Kolkata"
   };
   broadcastSettings: {
     title: string;

@@ -237,10 +237,11 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     }
 
     // 3. Duration setup
-    const durationMins = customDurationMins || (
+    const scheduledSlotDuration = task.scheduleSettings?.timeSlots?.[0]?.durationMins || task.scheduleSettings?.durationMins || 15;
+    const durationMins = Number(customDurationMins) || (
       task.mode === 'loop' 
-        ? (task.loopSettings?.runDurationMins || 60)
-        : (task.scheduleSettings?.durationMins || 60)
+        ? (Number(task.loopSettings?.runDurationMins) || 5)
+        : Number(scheduledSlotDuration)
     );
     const durationSeconds = Math.max(30, Math.floor(durationMins * 60));
     const nextEventAt = new Date(Date.now() + durationMins * 60 * 1000).toISOString();
@@ -499,10 +500,35 @@ async function processAutomationTick() {
 
     // 2. Scheduled Mode Handling
     else if (task.mode === 'scheduled') {
-      const currentDate = new Date();
-      const currentH = currentDate.getHours();
-      const currentM = currentDate.getMinutes();
-      const currentDay = currentDate.getDay(); // 0 = Sunday
+      const tz = task.scheduleSettings?.timezone || 'Asia/Kolkata';
+      let currentH: number;
+      let currentM: number;
+      let currentDay: number;
+
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: tz,
+          hour12: false,
+          hour: 'numeric',
+          minute: 'numeric',
+          weekday: 'short'
+        }).formatToParts(new Date());
+
+        const hVal = parts.find(p => p.type === 'hour')?.value || '0';
+        const mVal = parts.find(p => p.type === 'minute')?.value || '0';
+        currentH = parseInt(hVal, 10);
+        if (currentH === 24) currentH = 0;
+        currentM = parseInt(mVal, 10);
+
+        const weekdayVal = parts.find(p => p.type === 'weekday')?.value || 'Sun';
+        const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+        currentDay = dayMap[weekdayVal] ?? new Date().getDay();
+      } catch (e) {
+        const d = new Date();
+        currentH = d.getHours();
+        currentM = d.getMinutes();
+        currentDay = d.getDay();
+      }
 
       // Support multiple time slots per day!
       const slots = (task.scheduleSettings?.timeSlots && task.scheduleSettings.timeSlots.length > 0)
@@ -511,7 +537,7 @@ async function processAutomationTick() {
             id: 'default',
             label: 'Default Schedule',
             startTime: task.scheduleSettings?.startTime || '18:00',
-            durationMins: task.scheduleSettings?.durationMins || 60,
+            durationMins: Number(task.scheduleSettings?.durationMins) || 15,
             days: task.scheduleSettings?.days
           }];
 
@@ -532,8 +558,9 @@ async function processAutomationTick() {
             const lastStart = task.sessionStartTime ? new Date(task.sessionStartTime).getTime() : 0;
             // Prevent multiple triggers within the same 2 minutes
             if (now - lastStart > 120 * 1000) {
-              addAutoLog(task.id, `Clock reached ${slot.startTime}! Launching scheduled slot "${slot.label || slot.startTime}" (${slot.durationMins}m)...`);
-              await startAutoStreamTask(task, slot.durationMins, slot.id);
+              const runDuration = Number(slot.durationMins) || 15;
+              addAutoLog(task.id, `Clock reached ${slot.startTime} (${tz})! Launching scheduled slot "${slot.label || slot.startTime}" for ${runDuration} minutes...`);
+              await startAutoStreamTask(task, runDuration, slot.id);
               break;
             }
           }
