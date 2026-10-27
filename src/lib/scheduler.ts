@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { getConfig, saveConfig, AutoStreamTask } from './config';
@@ -6,14 +6,19 @@ import { createLiveBroadcastAndStream, transitionBroadcast } from './youtube';
 import { getFFmpegPath } from './ffmpegPath';
 
 const VIDEOS_DIR = path.join(process.cwd(), 'public', 'videos');
+const AUTO_PIDS_FILE = path.join(process.cwd(), 'active_auto_pids.json');
 
-interface ActiveAutoTask {
+export interface ActiveAutoTaskInfo {
   process?: ChildProcess;
+  pid?: number;
   activeBroadcasts?: Record<string, { broadcastId: string; streamId: string; streamKey: string; rtmpUrl: string }>;
   logs: string[];
+  stopTimer?: NodeJS.Timeout;
 }
 
-const activeAutoTasks: Map<string, ActiveAutoTask> = (global as any).activeAutoTasks || new Map<string, ActiveAutoTask>();
+// Preserve activeAutoTasks across hot-reloads and module evaluations
+export const activeAutoTasks: Map<string, ActiveAutoTaskInfo> =
+  (global as any).activeAutoTasks || new Map<string, ActiveAutoTaskInfo>();
 (global as any).activeAutoTasks = activeAutoTasks;
 
 function addAutoLog(taskId: string, message: string) {
@@ -24,7 +29,47 @@ function addAutoLog(taskId: string, message: string) {
   }
   const time = new Date().toLocaleTimeString();
   active.logs.push(`[${time}] ${message}`);
-  if (active.logs.length > 100) active.logs.shift();
+  if (active.logs.length > 150) active.logs.shift();
+}
+
+// Persist PIDs on disk for reliable multi-process cleanup
+function saveAutoTaskPid(taskId: string, pid: number) {
+  try {
+    const pids = fs.existsSync(AUTO_PIDS_FILE) ? JSON.parse(fs.readFileSync(AUTO_PIDS_FILE, 'utf8')) : {};
+    pids[taskId] = pid;
+    fs.writeFileSync(AUTO_PIDS_FILE, JSON.stringify(pids, null, 2));
+  } catch (e) {}
+}
+
+function removeAutoTaskPid(taskId: string) {
+  try {
+    if (fs.existsSync(AUTO_PIDS_FILE)) {
+      const pids = JSON.parse(fs.readFileSync(AUTO_PIDS_FILE, 'utf8'));
+      delete pids[taskId];
+      fs.writeFileSync(AUTO_PIDS_FILE, JSON.stringify(pids, null, 2));
+    }
+  } catch (e) {}
+}
+
+function getTaskPid(taskId: string): number | undefined {
+  const active = activeAutoTasks.get(taskId);
+  if (active?.pid) return active.pid;
+  if (active?.process?.pid) return active.process.pid;
+
+  // Check data.json
+  const config = getConfig();
+  const task = (config.autoTasks || []).find(t => t.id === taskId);
+  if (task?.pid) return task.pid;
+
+  // Check active_auto_pids.json
+  try {
+    if (fs.existsSync(AUTO_PIDS_FILE)) {
+      const pids = JSON.parse(fs.readFileSync(AUTO_PIDS_FILE, 'utf8'));
+      if (pids[taskId]) return pids[taskId];
+    }
+  } catch (e) {}
+
+  return undefined;
 }
 
 function killProcess(pid: number) {
@@ -32,9 +77,100 @@ function killProcess(pid: number) {
     if (process.platform === 'win32') {
       spawn('taskkill', ['/F', '/T', '/PID', pid.toString()]);
     } else {
-      process.kill(pid, 'SIGKILL');
+      try {
+        process.kill(-pid, 'SIGKILL');
+      } catch (e) {
+        try {
+          process.kill(pid, 'SIGKILL');
+        } catch (e2) {}
+      }
+      try {
+        execSync(`kill -9 ${pid} 2>/dev/null`);
+      } catch (e) {}
     }
   } catch (e) {}
+}
+
+/**
+ * Handle stream duration completion (Loop Cooldown or Permanent Stop)
+ */
+export async function handleDurationCompleted(taskId: string) {
+  const config = getConfig();
+  const task = (config.autoTasks || []).find(t => t.id === taskId);
+  if (!task) return;
+
+  // Clear timer if set
+  const active = activeAutoTasks.get(taskId);
+  if (active?.stopTimer) {
+    clearTimeout(active.stopTimer);
+    active.stopTimer = undefined;
+  }
+
+  // 1. Stop streaming and complete YouTube broadcast
+  await stopAutoStreamTask(taskId, 'Run duration completed');
+
+  // 2. Decide next state
+  if (task.mode === 'loop') {
+    const cooldownMins = task.loopSettings?.cooldownMins ?? 5;
+
+    // If cooldown is 0 or negative, stop completely!
+    if (cooldownMins <= 0) {
+      addAutoLog(taskId, `Stream duration finished! Auto-stopped completely (Cooldown is 0 mins).`);
+      const updated = (getConfig().autoTasks || []).map(t => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            enabled: false,
+            state: 'idle' as const,
+            pid: undefined,
+            sessionStartTime: undefined,
+            nextEventAt: undefined,
+            activeBroadcasts: undefined
+          };
+        }
+        return t;
+      });
+      saveConfig({ autoTasks: updated });
+      return;
+    }
+
+    // Cooldown > 0: Enter cooldown break
+    const cooldownEnd = new Date(Date.now() + cooldownMins * 60 * 1000).toISOString();
+    addAutoLog(taskId, `Stream duration completed! Entering cooldown break for ${cooldownMins} minutes (Next restart: ${new Date(cooldownEnd).toLocaleTimeString()})...`);
+
+    const updated = (getConfig().autoTasks || []).map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          state: 'cooldown' as const,
+          nextEventAt: cooldownEnd,
+          pid: undefined,
+          sessionStartTime: undefined,
+          activeBroadcasts: undefined
+        };
+      }
+      return t;
+    });
+    saveConfig({ autoTasks: updated });
+
+  } else if (task.mode === 'scheduled') {
+    addAutoLog(taskId, `Scheduled slot duration completed. Stream stopped.`);
+    const updated = (getConfig().autoTasks || []).map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          state: 'scheduled' as const,
+          activeSlotId: undefined,
+          pid: undefined,
+          sessionStartTime: undefined,
+          nextEventAt: undefined,
+          activeBroadcasts: undefined
+        };
+      }
+      return t;
+    });
+    saveConfig({ autoTasks: updated });
+  }
 }
 
 /**
@@ -45,10 +181,17 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     addAutoLog(task.id, `Preparing stream session for task "${task.name}"...`);
 
     // Guard against duplicate concurrent executions
+    const existingPid = getTaskPid(task.id);
     const existing = activeAutoTasks.get(task.id);
-    if (existing && existing.process && existing.process.pid) {
+    if ((existing && existing.process && existing.process.pid) || (existingPid && existingPid > 0 && task.state === 'streaming')) {
       addAutoLog(task.id, 'Task is already actively streaming. Duplicate start ignored.');
       return { success: false, message: 'Stream is already actively running.' };
+    }
+
+    // Clear previous timer if any
+    if (existing?.stopTimer) {
+      clearTimeout(existing.stopTimer);
+      existing.stopTimer = undefined;
     }
 
     // 1. Check video
@@ -59,7 +202,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       return { success: false, message: `Video file "${task.video}" not found on disk.` };
     }
 
-    // 2. Check target channels (Deduplicated so multiple broadcasts aren't created for the same channel)
+    // 2. Check target channels (Deduplicated)
     const uniqueChannels = Array.from(new Set(task.channelIds || []));
     if (uniqueChannels.length === 0) {
       addAutoLog(task.id, `Error: No target YouTube channels selected.`);
@@ -99,7 +242,16 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       return { success: false, message: 'Could not create broadcasts on any connected channel.' };
     }
 
-    // 3. Build FFmpeg command with ultra-low CPU optimization
+    // 3. Duration setup
+    const durationMins = customDurationMins || (
+      task.mode === 'loop' 
+        ? (task.loopSettings?.runDurationMins || 60)
+        : (task.scheduleSettings?.durationMins || 60)
+    );
+    const durationSeconds = Math.max(30, Math.floor(durationMins * 60));
+    const nextEventAt = new Date(Date.now() + durationMins * 60 * 1000).toISOString();
+
+    // 4. Build FFmpeg command with ultra-low CPU optimization
     const isUltraLow = task.cpuMode !== 'custom';
     const normalizedVideo = videoPath.replace(/\\/g, '/');
 
@@ -153,7 +305,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-tune', 'zerolatency',
-        '-threads', '2', // Prevent VPS CPU overloading
+        '-threads', '2',
         '-b:v', `${bitrate}k`,
         '-maxrate', `${bitrate}k`,
         '-bufsize', `${parseInt(bitrate) * 2}k`,
@@ -165,6 +317,9 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       );
     }
 
+    // Hard duration limit flag: FFmpeg automatically closes after exact duration!
+    args.push('-t', durationSeconds.toString());
+
     if (outputFormat === 'tee') {
       args.push('-f', 'tee', '-map', '0:v', '-map', '0:a', '-flags', '+global_header');
     } else {
@@ -175,25 +330,29 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     args.push(outputUrl);
 
     const ffmpegBin = getFFmpegPath();
-    addAutoLog(task.id, `Starting FFmpeg process (${isUltraLow ? 'Ultra-low CPU Copy Mode' : 'Custom Transcode Mode'})...`);
+    addAutoLog(task.id, `Starting FFmpeg process (${isUltraLow ? 'Ultra-low CPU Copy Mode' : 'Custom Transcode Mode'}) for ${durationMins} minutes...`);
     const proc = spawn(ffmpegBin, args, { stdio: 'pipe' });
 
     if (!proc.pid) {
       throw new Error('Failed to spawn FFmpeg process');
     }
 
-    const durationMins = customDurationMins || (
-      task.mode === 'loop' 
-        ? (task.loopSettings?.runDurationMins || 60)
-        : (task.scheduleSettings?.durationMins || 60)
-    );
+    // Persist PID to active_auto_pids.json
+    saveAutoTaskPid(task.id, proc.pid);
 
-    const nextEventAt = new Date(Date.now() + durationMins * 60 * 1000).toISOString();
+    // Set dedicated real-time timer for auto-stop guarantee
+    const durationMs = durationMins * 60 * 1000;
+    const stopTimer = setTimeout(async () => {
+      addAutoLog(task.id, `⏱ Duration timer (${durationMins}m) reached! Auto-stopping stream...`);
+      await handleDurationCompleted(task.id);
+    }, durationMs);
 
     activeAutoTasks.set(task.id, {
       process: proc,
+      pid: proc.pid,
       activeBroadcasts,
-      logs: activeAutoTasks.get(task.id)?.logs || []
+      logs: activeAutoTasks.get(task.id)?.logs || [],
+      stopTimer
     });
 
     // Update task in config
@@ -204,6 +363,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
           ...t,
           state: 'streaming' as const,
           activeSlotId: slotId,
+          pid: proc.pid,
           sessionStartTime: new Date().toISOString(),
           nextEventAt,
           activeBroadcasts
@@ -218,10 +378,22 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       if (msg) addAutoLog(task.id, msg);
     });
 
-    proc.on('close', (code) => {
+    proc.on('close', async (code) => {
       addAutoLog(task.id, `FFmpeg process exited (Code: ${code})`);
+      removeAutoTaskPid(task.id);
+
       const current = activeAutoTasks.get(task.id);
-      if (current) current.process = undefined;
+      if (current) {
+        current.process = undefined;
+        current.pid = undefined;
+      }
+
+      // If task is still marked as streaming, trigger completion transition
+      const currentConfig = getConfig();
+      const currentTask = (currentConfig.autoTasks || []).find(t => t.id === task.id);
+      if (currentTask && currentTask.state === 'streaming') {
+        await handleDurationCompleted(task.id);
+      }
     });
 
     addAutoLog(task.id, `Stream is LIVE! Will run for ${durationMins} minutes until ${new Date(nextEventAt).toLocaleTimeString()}`);
@@ -239,14 +411,27 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
 export async function stopAutoStreamTask(taskId: string, reason: string = 'Session completed'): Promise<{ success: boolean; message: string }> {
   try {
     addAutoLog(taskId, `Stopping stream (${reason})...`);
+    
+    // Clear dedicated auto-stop timer
     const active = activeAutoTasks.get(taskId);
-
-    if (active && active.process && active.process.pid) {
-      killProcess(active.process.pid);
-      active.process = undefined;
+    if (active?.stopTimer) {
+      clearTimeout(active.stopTimer);
+      active.stopTimer = undefined;
     }
 
-    // Complete YouTube broadcasts
+    // 1. Kill FFmpeg process
+    const pid = getTaskPid(taskId);
+    if (pid) {
+      addAutoLog(taskId, `Killing FFmpeg process (PID ${pid})...`);
+      killProcess(pid);
+      removeAutoTaskPid(taskId);
+    }
+    if (active) {
+      active.process = undefined;
+      active.pid = undefined;
+    }
+
+    // 2. Complete YouTube broadcasts
     const config = getConfig();
     const task = (config.autoTasks || []).find(t => t.id === taskId);
     const broadcasts = active?.activeBroadcasts || task?.activeBroadcasts || {};
@@ -254,11 +439,30 @@ export async function stopAutoStreamTask(taskId: string, reason: string = 'Sessi
     for (const [channelId, info] of Object.entries(broadcasts)) {
       if (info && info.broadcastId) {
         try {
-          await transitionBroadcast(channelId, info.broadcastId, 'complete');
-          addAutoLog(taskId, `Completed YouTube broadcast ${info.broadcastId} for channel ${channelId}`);
-        } catch (e) {}
+          const res = await transitionBroadcast(channelId, info.broadcastId, 'complete');
+          if (res.success) {
+            addAutoLog(taskId, `Completed YouTube broadcast ${info.broadcastId} for channel ${channelId}`);
+          } else {
+            addAutoLog(taskId, `Broadcast status note: ${res.message || 'Already complete'}`);
+          }
+        } catch (e: any) {
+          addAutoLog(taskId, `Error completing YouTube broadcast: ${e.message}`);
+        }
       }
     }
+
+    // Clean PID and broadcasts from saved config
+    const updated = (getConfig().autoTasks || []).map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          pid: undefined,
+          activeBroadcasts: undefined
+        };
+      }
+      return t;
+    });
+    saveConfig({ autoTasks: updated });
 
     return { success: true, message: 'Stream stopped successfully.' };
   } catch (err: any) {
@@ -282,37 +486,18 @@ async function processAutomationTick() {
 
     // 1. Loop Mode Handling
     if (task.mode === 'loop') {
-      const runDurationMins = task.loopSettings?.runDurationMins || 60;
-      const cooldownMins = task.loopSettings?.cooldownMins || 5;
-
       if (task.state === 'idle') {
         // Start stream immediately
         await startAutoStreamTask(task);
       } else if (task.state === 'streaming') {
         // Check if stream run duration is over
         if (task.nextEventAt && now >= new Date(task.nextEventAt).getTime()) {
-          addAutoLog(task.id, `Stream duration (${runDurationMins}m) complete. Entering cooldown for ${cooldownMins} minutes...`);
-          await stopAutoStreamTask(task.id, 'Run duration completed');
-
-          const cooldownEnd = new Date(now + cooldownMins * 60 * 1000).toISOString();
-          const updated = (getConfig().autoTasks || []).map(t => {
-            if (t.id === task.id) {
-              return {
-                ...t,
-                state: 'cooldown' as const,
-                nextEventAt: cooldownEnd,
-                sessionStartTime: undefined,
-                activeBroadcasts: undefined
-              };
-            }
-            return t;
-          });
-          saveConfig({ autoTasks: updated });
+          await handleDurationCompleted(task.id);
         }
       } else if (task.state === 'cooldown') {
         // Check if cooldown period is over
         if (task.nextEventAt && now >= new Date(task.nextEventAt).getTime()) {
-          addAutoLog(task.id, `Cooldown period complete. Restarting loop cycle!`);
+          addAutoLog(task.id, `Cooldown break completed. Restarting next loop cycle!`);
           await startAutoStreamTask(task);
         }
       }
@@ -339,23 +524,7 @@ async function processAutomationTick() {
       if (task.state === 'streaming') {
         // Check if duration expired
         if (task.nextEventAt && now >= new Date(task.nextEventAt).getTime()) {
-          addAutoLog(task.id, `Scheduled slot duration complete. Stopping stream.`);
-          await stopAutoStreamTask(task.id, 'Scheduled slot duration completed');
-
-          const updated = (getConfig().autoTasks || []).map(t => {
-            if (t.id === task.id) {
-              return {
-                ...t,
-                state: 'scheduled' as const,
-                activeSlotId: undefined,
-                sessionStartTime: undefined,
-                nextEventAt: undefined,
-                activeBroadcasts: undefined
-              };
-            }
-            return t;
-          });
-          saveConfig({ autoTasks: updated });
+          await handleDurationCompleted(task.id);
         }
       } else {
         // Check if current time matches ANY active time slot for today
@@ -388,12 +557,12 @@ export function initAutomationScheduler() {
   (global as any).__schedulerInitialized = true;
 
   console.log('[Scheduler] Background stream automation engine started.');
-  // Check every 10 seconds
+  // Check every 5 seconds for responsive auto-stop and scheduling
   setInterval(() => {
     processAutomationTick().catch(err => {
       console.error('[Scheduler] Error in tick:', err);
     });
-  }, 10000);
+  }, 5000);
 }
 
 export function getAutoTaskStatuses() {

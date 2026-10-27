@@ -144,7 +144,10 @@ export async function POST(req: Request) {
           bitrate: task.bitrate || t.bitrate,
           fps: task.fps || t.fps,
           mode: task.mode || t.mode,
-          loopSettings: task.loopSettings || t.loopSettings,
+          loopSettings: task.loopSettings ? {
+            runDurationMins: task.loopSettings.runDurationMins || 60,
+            cooldownMins: task.loopSettings.cooldownMins !== undefined ? task.loopSettings.cooldownMins : 5
+          } : t.loopSettings,
           scheduleSettings: task.scheduleSettings || t.scheduleSettings,
           broadcastSettings: task.broadcastSettings || t.broadcastSettings,
           enabled: task.enabled !== undefined ? task.enabled : t.enabled,
@@ -168,7 +171,10 @@ export async function POST(req: Request) {
       bitrate: task.bitrate || '4000k',
       fps: task.fps || '60',
       mode: task.mode || 'loop',
-      loopSettings: task.loopSettings || { runDurationMins: 60, cooldownMins: 5 },
+      loopSettings: task.loopSettings ? {
+        runDurationMins: task.loopSettings.runDurationMins || 60,
+        cooldownMins: task.loopSettings.cooldownMins !== undefined ? task.loopSettings.cooldownMins : 5
+      } : { runDurationMins: 60, cooldownMins: 5 },
       scheduleSettings: task.scheduleSettings || {
         startTime: '18:00',
         durationMins: 60,

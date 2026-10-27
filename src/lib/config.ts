@@ -88,6 +88,7 @@ export interface AutoStreamTask {
   sessionStartTime?: string;
   nextEventAt?: string;
   activeBroadcasts?: Record<string, { broadcastId: string; streamId: string; streamKey: string; rtmpUrl: string }>;
+  pid?: number;
   logs?: string[];
 }
 

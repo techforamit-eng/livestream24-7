@@ -815,32 +815,35 @@ export default function AutoStreamPage() {
                           onChange={(e) => setEditingTask({
                             ...editingTask,
                             loopSettings: {
-                              runDurationMins: parseInt(e.target.value) || 60,
-                              cooldownMins: editingTask.loopSettings?.cooldownMins || 5
+                              runDurationMins: Math.max(1, parseInt(e.target.value) || 1),
+                              cooldownMins: editingTask.loopSettings?.cooldownMins !== undefined ? editingTask.loopSettings.cooldownMins : 5
                             }
                           })}
                           className="w-full bg-[#181818] border border-gray-700 rounded-lg px-3 py-2 text-white text-xs"
                         />
-                        <span className="text-[10px] text-gray-500">e.g. 60 = 1 hour stream</span>
+                        <span className="text-[10px] text-gray-500">e.g. 5 = 5 min stream, 60 = 1 hr</span>
                       </div>
 
                       <div>
                         <label className="block text-[11px] font-semibold text-gray-400 mb-1">Cooldown Break (Mins)</label>
                         <input
                           type="number"
-                          min={1}
+                          min={0}
                           max={1440}
-                          value={editingTask.loopSettings?.cooldownMins || 5}
-                          onChange={(e) => setEditingTask({
-                            ...editingTask,
-                            loopSettings: {
-                              runDurationMins: editingTask.loopSettings?.runDurationMins || 60,
-                              cooldownMins: parseInt(e.target.value) || 5
-                            }
-                          })}
+                          value={editingTask.loopSettings?.cooldownMins !== undefined ? editingTask.loopSettings.cooldownMins : 5}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                            setEditingTask({
+                              ...editingTask,
+                              loopSettings: {
+                                runDurationMins: editingTask.loopSettings?.runDurationMins || 60,
+                                cooldownMins: isNaN(val) ? 0 : Math.max(0, val)
+                              }
+                            });
+                          }}
                           className="w-full bg-[#181818] border border-gray-700 rounded-lg px-3 py-2 text-white text-xs"
                         />
-                        <span className="text-[10px] text-gray-500">e.g. 5 = 5 min pause</span>
+                        <span className="text-[10px] text-gray-500">0 = Auto-stop permanently, 5 = 5 min pause</span>
                       </div>
                     </div>
                   ) : (
