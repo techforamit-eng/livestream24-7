@@ -39,6 +39,7 @@ export default function AutoStreamPage() {
   const [redirectUri, setRedirectUri] = useState('');
   const [hasClientSecret, setHasClientSecret] = useState(false);
   const [copiedRedirect, setCopiedRedirect] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const fetchTasks = async () => {
     try {
@@ -126,6 +127,7 @@ export default function AutoStreamPage() {
   };
 
   useEffect(() => {
+    setMounted(true);
     fetchTasks();
     fetchChannels();
     fetchVideos();
@@ -319,7 +321,7 @@ export default function AutoStreamPage() {
   };
 
   const formatRemainingTime = (isoTarget?: string) => {
-    if (!isoTarget) return '';
+    if (!mounted || !isoTarget) return '';
     const diff = new Date(isoTarget).getTime() - Date.now();
     if (diff <= 0) return 'Ending soon...';
     const totalSecs = Math.floor(diff / 1000);
@@ -329,7 +331,7 @@ export default function AutoStreamPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-8 max-w-7xl mx-auto space-y-8" suppressHydrationWarning>
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-6">
         <div>
@@ -1309,7 +1311,8 @@ export default function AutoStreamPage() {
                     <input
                       type="text"
                       readOnly
-                      value={redirectUri || `${typeof window !== 'undefined' ? window.location.origin : ''}/api/youtube/callback`}
+                      value={redirectUri || (mounted ? `${window.location.origin}/api/youtube/callback` : '')}
+                      suppressHydrationWarning
                       className="w-full bg-[#111] border border-gray-800 rounded-xl px-4 py-2 text-gray-400 text-xs font-mono select-all"
                     />
                     <button
