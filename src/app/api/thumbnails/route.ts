@@ -74,3 +74,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const role = await getUserId();
+    const { filename } = await req.json();
+
+    if (!filename) {
+      return NextResponse.json({ success: false, message: 'filename is required' }, { status: 400 });
+    }
+
+    const safeName = path.basename(filename);
+    const userDir = path.join(THUMBNAILS_DIR, role);
+    const filePath = path.join(userDir, safeName);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      return NextResponse.json({ success: true, message: 'Thumbnail deleted successfully.' });
+    } else {
+      return NextResponse.json({ success: false, message: 'Thumbnail file not found.' }, { status: 404 });
+    }
+  } catch (err: any) {
+    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+  }
+}

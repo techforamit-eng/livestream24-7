@@ -128,6 +128,36 @@ export default function AutoStreamPage() {
     }
   };
 
+  const handleDeleteThumbnail = async (filename: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to permanently delete thumbnail "${filename}"?`)) return;
+    try {
+      const res = await fetch('/api/thumbnails', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (editingTask?.broadcastSettings?.thumbnail === filename) {
+          setEditingTask((prev: any) => ({
+            ...prev,
+            broadcastSettings: {
+              ...(prev?.broadcastSettings || {}),
+              thumbnail: ''
+            }
+          }));
+        }
+        fetchThumbnails();
+        setMessage({ text: 'Thumbnail deleted successfully.', type: 'success' });
+      } else {
+        setMessage({ text: data.message || 'Failed to delete thumbnail', type: 'error' });
+      }
+    } catch (err: any) {
+      setMessage({ text: 'Error deleting thumbnail: ' + err.message, type: 'error' });
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
     fetchTasks();
@@ -1350,30 +1380,52 @@ export default function AutoStreamPage() {
                       )}
                     </div>
 
-                    {/* Quick pick from existing thumbnails if any */}
+                    {/* Quick pick & delete from existing thumbnails */}
                     {thumbnails.length > 0 && (
-                      <div className="pt-1">
-                        <span className="text-[10px] text-gray-500 block mb-1">Or select from previously uploaded thumbnails:</span>
-                        <div className="flex items-center gap-2 overflow-x-auto py-1">
-                          {thumbnails.map(t => (
-                            <button
-                              key={t.name}
-                              type="button"
-                              onClick={() => setEditingTask({
-                                ...editingTask,
-                                broadcastSettings: {
-                                  ...(editingTask.broadcastSettings || { title: '', description: '', privacyStatus: 'public' }),
-                                  thumbnail: t.name
-                                }
-                              })}
-                              className={`relative rounded border p-0.5 transition-all shrink-0 ${editingTask.broadcastSettings?.thumbnail === t.name
-                                ? 'border-red-500 ring-2 ring-red-500/30'
-                                : 'border-gray-800 hover:border-gray-600'
-                                }`}
-                            >
-                              <img src={t.url} alt={t.name} className="w-16 h-10 object-cover rounded" />
-                            </button>
-                          ))}
+                      <div className="pt-2">
+                        <span className="text-[10px] text-gray-400 block mb-1.5 font-medium">
+                          Uploaded Thumbnails (Click to select, or delete):
+                        </span>
+                        <div className="flex items-center gap-3 overflow-x-auto py-2 px-1">
+                          {thumbnails.map(t => {
+                            const isSelected = editingTask.broadcastSettings?.thumbnail === t.name;
+                            return (
+                              <div key={t.name} className="relative group shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingTask({
+                                    ...editingTask,
+                                    broadcastSettings: {
+                                      ...(editingTask.broadcastSettings || { title: '', description: '', privacyStatus: 'public' }),
+                                      thumbnail: t.name
+                                    }
+                                  })}
+                                  className={`relative block rounded-lg border-2 p-0.5 transition-all overflow-hidden ${isSelected
+                                    ? 'border-purple-500 ring-2 ring-purple-500/40 shadow-lg shadow-purple-950/40'
+                                    : 'border-gray-800 hover:border-gray-600'
+                                    }`}
+                                  title={`Select "${t.name}"`}
+                                >
+                                  <img src={t.url} alt={t.name} className="w-20 h-12 object-cover rounded" />
+                                  {isSelected && (
+                                    <div className="absolute inset-0 bg-purple-600/20 flex items-center justify-center">
+                                      <span className="bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
+                                        Selected
+                                      </span>
+                                    </div>
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteThumbnail(t.name, e)}
+                                  className="absolute -top-1.5 -right-1.5 p-1 bg-red-600 hover:bg-red-500 text-white rounded-full shadow-lg transition-transform hover:scale-110 z-10"
+                                  title={`Delete "${t.name}"`}
+                                >
+                                  <Trash2 className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
