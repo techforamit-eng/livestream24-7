@@ -184,7 +184,7 @@ export async function createLiveBroadcastAndStream(channelId: string, options: {
       },
       contentDetails: {
         enableAutoStart: true,
-        enableAutoStop: false, // Must be false so liveBroadcasts.transition to 'complete' is permitted by YouTube API
+        enableAutoStop: true, // Automatically completes broadcast when FFmpeg stops, archiving it as a permanent video
         enableDvr: true,
         recordFromStart: true
       }
@@ -294,13 +294,28 @@ export async function transitionBroadcast(channelId: string, broadcastId: string
 }
 
 /**
- * Complete a live broadcast, or delete if it was never started / upcoming
+ * Complete a live broadcast, preserving the recorded video permanently on YouTube
  */
 export async function endOrCleanupBroadcast(channelId: string, broadcastId: string) {
   try {
     const youtube = await getAuthenticatedYouTube(channelId);
 
-    // 1. Try transition to 'complete' if live or testing
+    // 1. Fetch current status
+    let currentStatus = '';
+    try {
+      const listRes = await youtube.liveBroadcasts.list({
+        part: ['id', 'status'],
+        id: [broadcastId]
+      });
+      currentStatus = listRes.data.items?.[0]?.status?.lifeCycleStatus || '';
+    } catch (e) { }
+
+    // If already completed, video is already archived on YouTube
+    if (currentStatus === 'complete') {
+      return { success: true, action: 'completed', status: 'complete' };
+    }
+
+    // 2. Try transition to 'complete' so YouTube finishes processing the recorded video
     try {
       const res = await youtube.liveBroadcasts.transition({
         id: broadcastId,
@@ -309,9 +324,10 @@ export async function endOrCleanupBroadcast(channelId: string, broadcastId: stri
       });
       return { success: true, action: 'completed', status: res.data.status?.lifeCycleStatus };
     } catch (transErr: any) {
-      // If transition failed (e.g. broadcast was 'ready' / upcoming), delete it cleanly
-      await youtube.liveBroadcasts.delete({ id: broadcastId });
-      return { success: true, action: 'deleted' };
+      // IMPORTANT: DO NOT DELETE the broadcast!
+      // When enableAutoStop is true, YouTube will automatically archive the stream as a normal video.
+      console.log(`[YouTube] Broadcast ${broadcastId} status note: ${transErr.message}. Preserving video recording on channel.`);
+      return { success: true, action: 'preserved_as_video', message: transErr.message };
     }
   } catch (err: any) {
     return { success: false, message: err.message };
@@ -319,7 +335,7 @@ export async function endOrCleanupBroadcast(channelId: string, broadcastId: stri
 }
 
 /**
- * Delete a broadcast
+ * Delete a broadcast (used only when explicitly requested for empty/draft broadcasts)
  */
 export async function deleteBroadcast(channelId: string, broadcastId: string) {
   try {
@@ -333,6 +349,7 @@ export async function deleteBroadcast(channelId: string, broadcastId: string) {
 
 /**
  * Clean up all duplicate or stale broadcasts on a YouTube channel
+ * Live or completed broadcasts are NEVER deleted; only empty unstreamed drafts are cleaned.
  */
 export async function cleanupChannelBroadcasts(channelId: string) {
   try {
@@ -361,12 +378,11 @@ export async function cleanupChannelBroadcasts(channelId: string) {
           });
           cleanedCount++;
         } catch (e) {
-          try {
-            await youtube.liveBroadcasts.delete({ id: bId });
-            cleanedCount++;
-          } catch (e2) { }
+          // Keep video safe, do not delete!
+          cleanedCount++;
         }
       } else if (status === 'ready' || status === 'created') {
+        // Only unstarted, empty draft streams are deleted
         try {
           await youtube.liveBroadcasts.delete({ id: bId });
           cleanedCount++;

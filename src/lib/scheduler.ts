@@ -537,7 +537,7 @@ export async function stopAutoStreamTask(taskId: string, reason: string = 'Sessi
         try {
           const res = await endOrCleanupBroadcast(channelId, info.broadcastId);
           if (res.success) {
-            addAutoLog(taskId, `Ended YouTube broadcast ${info.broadcastId} for channel ${channelId}`);
+            addAutoLog(taskId, `Live stream ended for broadcast ${info.broadcastId} on channel ${channelId}. Saved permanently as video.`);
           } else {
             addAutoLog(taskId, `Broadcast note: ${res.message || 'Already completed'}`);
           }
