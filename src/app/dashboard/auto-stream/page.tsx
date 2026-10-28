@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, Play, Square, RotateCw, Plus, Trash2, Settings, Video, Clock,
   Repeat, ShieldAlert, CheckCircle2, AlertCircle, ExternalLink, Key,
-  Sliders, Cpu, Copy, Check, Eye, EyeOff, Radio, Image as ImageIcon, Tag, Upload, FileText
+  Sliders, Cpu, Copy, Check, Eye, EyeOff, Radio, Image as ImageIcon, Tag, Upload, FileText, Box
 } from 'lucide-react';
 import type { AutoStreamTask } from '@/lib/config';
 
@@ -326,7 +326,7 @@ export default function AutoStreamPage() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this auto task?')) return;
+    if (!confirm('Are you sure you want to delete this stream container? If it is currently live, only this container\'s FFmpeg stream will be stopped immediately. Other running streams will remain untouched.')) return;
     try {
       const res = await fetch('/api/automation', {
         method: 'DELETE',
@@ -336,10 +336,12 @@ export default function AutoStreamPage() {
       const data = await res.json();
       if (data.success) {
         fetchTasks();
-        setMessage({ text: 'Task deleted.', type: 'success' });
+        setMessage({ text: 'Container and its live FFmpeg stream deleted & stopped successfully.', type: 'success' });
+      } else {
+        setMessage({ text: data.message || 'Failed to delete container', type: 'error' });
       }
-    } catch (e) {
-      setMessage({ text: 'Failed to delete task', type: 'error' });
+    } catch (e: any) {
+      setMessage({ text: 'Failed to delete container: ' + e.message, type: 'error' });
     }
   };
 
@@ -506,57 +508,100 @@ export default function AutoStreamPage() {
         )}
       </div>
 
-      {/* Section 2: Automated Stream Tasks */}
+      {/* Section 2: Automated Stream Containers */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-red-500" />
-            <span>Active Automated Tasks ({tasks.length})</span>
-          </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+              <Box className="w-5 h-5 text-purple-400" />
+              <span>Active Stream Containers ({tasks.length})</span>
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Each container runs an isolated FFmpeg process. Starting, stopping, or deleting a container controls only its own live stream.
+            </p>
+          </div>
+          <button
+            onClick={handleOpenCreateModal}
+            className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-lg shadow-purple-900/30 shrink-0 self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Stream Container</span>
+          </button>
         </div>
 
         {tasks.length === 0 ? (
           <div className="p-12 rounded-2xl bg-[#141414] border border-dashed border-gray-800 text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-red-500/10 text-red-400 mx-auto flex items-center justify-center border border-red-500/20">
-              <Zap className="w-7 h-7" />
+            <div className="w-14 h-14 rounded-full bg-purple-500/10 text-purple-400 mx-auto flex items-center justify-center border border-purple-500/20">
+              <Box className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Create Your First Automation Task</h3>
+              <h3 className="text-lg font-bold text-white">Create Your First Stream Container</h3>
               <p className="text-gray-400 text-sm mt-1 max-w-lg mx-auto">
-                Set up an automated stream loop (e.g. 1 hour live + 5 min cooldown) or schedule a daily broadcast at a fixed time like 6:00 PM.
+                Deploy an automated stream container with its own isolated FFmpeg process, video loop or fixed daily schedule.
               </p>
             </div>
             <button
               onClick={handleOpenCreateModal}
-              className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-all shadow-lg shadow-red-900/30"
+              className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold transition-all shadow-lg shadow-purple-900/30"
             >
               <Plus className="w-4 h-4" />
-              <span>Create New Task</span>
+              <span>Deploy Stream Container</span>
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {tasks.map((task) => {
+            {tasks.map((task, idx) => {
               const status = statuses[task.id] || {};
               const currentState = status.state || task.state || 'idle';
               const isStreaming = currentState === 'streaming';
               const isCooldown = currentState === 'cooldown';
               const isEnabled = task.enabled;
+              const activePid = status.pid || task.pid;
 
               return (
                 <div
                   key={task.id}
-                  className={`p-6 rounded-2xl bg-[#161616] border transition-all ${isStreaming
-                    ? 'border-emerald-500/40 shadow-lg shadow-emerald-950/20'
+                  className={`p-6 rounded-2xl bg-[#161616] border transition-all relative overflow-hidden ${isStreaming
+                    ? 'border-emerald-500/50 shadow-lg shadow-emerald-950/20'
                     : isCooldown
                       ? 'border-amber-500/40'
                       : 'border-gray-800 hover:border-gray-700'
                     }`}
                 >
-                  {/* Task Header */}
+                  {/* Container Header Banner */}
+                  <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-800/80 text-[11px]">
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-purple-950/50 text-purple-300 border border-purple-500/30 flex items-center space-x-1">
+                        <Box className="w-3 h-3 text-purple-400" />
+                        <span>CONTAINER #{task.id.slice(0, 8).toUpperCase()}</span>
+                      </span>
+                      {isStreaming && (
+                        <span className="px-2 py-0.5 rounded font-mono text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
+                          PID: {activePid || 'Active'}
+                        </span>
+                      )}
+                    </div>
+                    {/* Enable Toggle Switch */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-400 text-[10px]">{isEnabled ? 'Container Active' : 'Container Paused'}</span>
+                      <button
+                        onClick={() => handleTriggerAction(task.id, 'toggle')}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isEnabled ? 'bg-purple-600' : 'bg-gray-800'
+                          }`}
+                        title={isEnabled ? 'Container is Enabled' : 'Container is Paused'}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isEnabled ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Task Header Details */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                         <h3 className="text-lg font-bold text-white">{task.name}</h3>
                         {/* Mode badge */}
                         <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-800 text-gray-300 border border-gray-700 flex items-center space-x-1">
@@ -586,19 +631,6 @@ export default function AutoStreamPage() {
                         </span>
                       </p>
                     </div>
-
-                    {/* Enable Toggle Switch */}
-                    <button
-                      onClick={() => handleTriggerAction(task.id, 'toggle')}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isEnabled ? 'bg-red-600' : 'bg-gray-800'
-                        }`}
-                      title={isEnabled ? 'Task is Enabled' : 'Task is Paused'}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isEnabled ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                      />
-                    </button>
                   </div>
 
                   {/* Status Banner */}
@@ -616,11 +648,11 @@ export default function AutoStreamPage() {
                       />
                       <div>
                         <div className="text-xs font-bold text-white uppercase tracking-wider">
-                          {isStreaming && '🔴 LIVE STREAMING'}
-                          {isCooldown && '☕ COOLDOWN BREAK'}
-                          {currentState === 'scheduled' && isEnabled && '🕒 SCHEDULED'}
-                          {currentState === 'idle' && isEnabled && '⚡ READY TO LOOP'}
-                          {!isEnabled && '⏸️ DISABLED'}
+                          {isStreaming && '🔴 CONTAINER LIVE STREAMING'}
+                          {isCooldown && '☕ CONTAINER COOLDOWN BREAK'}
+                          {currentState === 'scheduled' && isEnabled && '🕒 CONTAINER SCHEDULED'}
+                          {currentState === 'idle' && isEnabled && '⚡ CONTAINER READY'}
+                          {!isEnabled && '⏸️ CONTAINER DISABLED'}
                         </div>
                         <div className="text-[11px] text-gray-400">
                           {isStreaming && `Remaining: ${formatRemainingTime(status.nextEventAt || task.nextEventAt)}`}
@@ -649,17 +681,19 @@ export default function AutoStreamPage() {
                         <button
                           onClick={() => handleTriggerAction(task.id, 'stop')}
                           className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 text-xs font-bold transition-all"
+                          title="Stops ONLY this container's FFmpeg stream process"
                         >
                           <Square className="w-3.5 h-3.5 fill-current" />
-                          <span>Stop Stream</span>
+                          <span>Stop Container</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => handleTriggerAction(task.id, 'start')}
                           className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all"
+                          title="Starts only this container's live stream"
                         >
                           <Play className="w-3.5 h-3.5 fill-current" />
-                          <span>Start Now</span>
+                          <span>Start Container</span>
                         </button>
                       )}
 
@@ -667,7 +701,7 @@ export default function AutoStreamPage() {
                         onClick={() => setActiveLogTaskId(activeLogTaskId === task.id ? null : task.id)}
                         className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold transition-all"
                       >
-                        {activeLogTaskId === task.id ? 'Hide Logs' : 'View Logs'}
+                        {activeLogTaskId === task.id ? 'Hide Logs' : 'Container Logs'}
                       </button>
                     </div>
 
@@ -675,14 +709,14 @@ export default function AutoStreamPage() {
                       <button
                         onClick={() => handleEditTask(task)}
                         className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all"
-                        title="Edit Task"
+                        title="Configure Container"
                       >
                         <Sliders className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteTask(task.id)}
                         className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                        title="Delete Task"
+                        title="Delete container & stop only its FFmpeg stream"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -692,12 +726,15 @@ export default function AutoStreamPage() {
                   {/* Logs Dropdown */}
                   {activeLogTaskId === task.id && (
                     <div className="mt-4 p-3 bg-black/80 rounded-xl border border-gray-800 font-mono text-[11px] text-gray-300 max-h-48 overflow-y-auto space-y-1">
-                      <div className="text-gray-500 text-[10px] pb-1 border-b border-gray-800">Console Logs ({task.name}):</div>
+                      <div className="text-gray-500 text-[10px] pb-1 border-b border-gray-800 flex justify-between">
+                        <span>Console Logs ({task.name}):</span>
+                        <span className="font-mono text-[9px] text-purple-400">CONTAINER #{task.id.slice(0, 8).toUpperCase()}</span>
+                      </div>
                       {(status.logs || []).length === 0 ? (
                         <div className="text-gray-600 italic">No logs recorded yet.</div>
                       ) : (
-                        (status.logs || []).slice(-25).map((l: string, idx: number) => (
-                          <div key={idx} className="whitespace-pre-wrap">{l}</div>
+                        (status.logs || []).slice(-25).map((l: string, logIdx: number) => (
+                          <div key={logIdx} className="whitespace-pre-wrap">{l}</div>
                         ))
                       )}
                     </div>
@@ -721,8 +758,8 @@ export default function AutoStreamPage() {
             >
               <div className="flex items-center justify-between border-b border-gray-800 p-4 sm:p-5 shrink-0 bg-[#181818]">
                 <h3 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-2">
-                  <Zap className="w-5 h-5 text-red-500" />
-                  <span>{editingTask.id ? 'Edit Auto Task' : 'Create Auto Stream Task'}</span>
+                  <Box className="w-5 h-5 text-purple-400" />
+                  <span>{editingTask.id ? 'Configure Stream Container' : 'Deploy New Stream Container'}</span>
                 </h3>
                 <button
                   type="button"
@@ -734,16 +771,16 @@ export default function AutoStreamPage() {
               </div>
 
               <form id="auto-stream-form" onSubmit={handleSaveTask} className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1">
-                {/* Task Name */}
+                {/* Container Name */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Task Name</label>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Container Name</label>
                   <input
                     type="text"
                     required
                     value={editingTask.name || ''}
                     onChange={(e) => setEditingTask({ ...editingTask, name: e.target.value })}
-                    className="w-full bg-[#111] border border-gray-800 rounded-xl px-4 py-2.5 text-white text-sm focus:border-red-500 focus:outline-none"
-                    placeholder="e.g. 24/7 Bhajan Live Loop"
+                    className="w-full bg-[#111] border border-gray-800 rounded-xl px-4 py-2.5 text-white text-sm focus:border-purple-500 focus:outline-none"
+                    placeholder="e.g. 24/7 Bhajan Live Loop Container"
                   />
                 </div>
 
@@ -1358,9 +1395,9 @@ export default function AutoStreamPage() {
                   type="submit"
                   form="auto-stream-form"
                   disabled={loading}
-                  className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-red-900/30 transition-all"
+                  className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-purple-900/30 transition-all"
                 >
-                  {loading ? 'Saving...' : 'Save Task'}
+                  {loading ? 'Saving...' : (editingTask.id ? 'Save Container Changes' : 'Deploy Container')}
                 </button>
               </div>
             </motion.div>

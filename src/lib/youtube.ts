@@ -44,7 +44,7 @@ export function getCleanOrigin(req: Request): string {
     if (url.hostname !== '0.0.0.0') {
       return url.origin;
     }
-  } catch (e) {}
+  } catch (e) { }
 
   return 'https://live.vmagicdigital.com';
 }
@@ -299,7 +299,7 @@ export async function transitionBroadcast(channelId: string, broadcastId: string
 export async function endOrCleanupBroadcast(channelId: string, broadcastId: string) {
   try {
     const youtube = await getAuthenticatedYouTube(channelId);
-    
+
     // 1. Try transition to 'complete' if live or testing
     try {
       const res = await youtube.liveBroadcasts.transition({
@@ -364,13 +364,13 @@ export async function cleanupChannelBroadcasts(channelId: string) {
           try {
             await youtube.liveBroadcasts.delete({ id: bId });
             cleanedCount++;
-          } catch (e2) {}
+          } catch (e2) { }
         }
       } else if (status === 'ready' || status === 'created') {
         try {
           await youtube.liveBroadcasts.delete({ id: bId });
           cleanedCount++;
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 

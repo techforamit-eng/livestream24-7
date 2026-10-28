@@ -152,14 +152,14 @@ export async function POST(req: Request) {
             ...t.scheduleSettings,
             ...task.scheduleSettings,
             timezone: task.scheduleSettings.timezone || t.scheduleSettings?.timezone || 'Asia/Kolkata',
-            timeSlots: task.scheduleSettings.timeSlots && task.scheduleSettings.timeSlots.length > 0 
+            timeSlots: task.scheduleSettings.timeSlots && task.scheduleSettings.timeSlots.length > 0
               ? task.scheduleSettings.timeSlots.map((s: any) => ({
-                  id: s.id || uuidv4(),
-                  label: s.label || 'Scheduled Slot',
-                  startTime: s.startTime || '18:00',
-                  durationMins: Number(s.durationMins) || 15,
-                  days: s.days
-                }))
+                id: s.id || uuidv4(),
+                label: s.label || 'Scheduled Slot',
+                startTime: s.startTime || '18:00',
+                durationMins: Number(s.durationMins) || 15,
+                days: s.days
+              }))
               : t.scheduleSettings?.timeSlots
           } : t.scheduleSettings,
           broadcastSettings: task.broadcastSettings || t.broadcastSettings,
@@ -193,14 +193,14 @@ export async function POST(req: Request) {
         durationMins: Number(task.scheduleSettings.durationMins) || 15,
         timezone: task.scheduleSettings.timezone || 'Asia/Kolkata',
         days: task.scheduleSettings.days,
-        timeSlots: task.scheduleSettings.timeSlots && task.scheduleSettings.timeSlots.length > 0 
+        timeSlots: task.scheduleSettings.timeSlots && task.scheduleSettings.timeSlots.length > 0
           ? task.scheduleSettings.timeSlots.map((s: any) => ({
-              id: s.id || uuidv4(),
-              label: s.label || 'Scheduled Slot',
-              startTime: s.startTime || '18:00',
-              durationMins: Number(s.durationMins) || 15,
-              days: s.days
-            }))
+            id: s.id || uuidv4(),
+            label: s.label || 'Scheduled Slot',
+            startTime: s.startTime || '18:00',
+            durationMins: Number(s.durationMins) || 15,
+            days: s.days
+          }))
           : [{ id: uuidv4(), label: 'Daily Stream 1', startTime: '18:00', durationMins: 15 }]
       } : {
         startTime: '18:00',
@@ -245,11 +245,12 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
   }
 
-  // Stop if currently running
-  await stopAutoStreamTask(taskId, 'Task deleted');
+  // 1. Force stop ONLY this container's FFmpeg stream and clean its YouTube broadcast
+  await stopAutoStreamTask(taskId, 'Container task deleted');
 
-  const filtered = existingTasks.filter(t => t.id !== taskId);
+  // 2. Remove container from configuration
+  const filtered = (getConfig().autoTasks || []).filter(t => t.id !== taskId);
   saveConfig({ autoTasks: filtered });
 
-  return NextResponse.json({ success: true, message: 'Task deleted successfully.' });
+  return NextResponse.json({ success: true, message: 'Container and its FFmpeg stream deleted successfully.' });
 }
