@@ -12,6 +12,7 @@ interface ChannelInfo {
   id: string;
   title: string;
   thumbnail?: string;
+  userId?: string;
   connectedAt: string;
 }
 
@@ -20,6 +21,7 @@ export default function AutoStreamPage() {
   const [statuses, setStatuses] = useState<Record<string, any>>({});
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
   const [videos, setVideos] = useState<{ name: string }[]>([]);
+  const [userRole, setUserRole] = useState<string>('admin');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -50,6 +52,7 @@ export default function AutoStreamPage() {
       if (data.success) {
         setTasks(data.tasks || []);
         setStatuses(data.statuses || {});
+        if (data.userRole) setUserRole(data.userRole);
       }
     } catch (e) { }
   };
@@ -60,6 +63,7 @@ export default function AutoStreamPage() {
       const data = await res.json();
       if (data.success) {
         setChannels(data.channels || []);
+        if (data.userRole) setUserRole(data.userRole);
       }
     } catch (e) { }
   };
@@ -431,20 +435,22 @@ export default function AutoStreamPage() {
             <span>{isCleaning ? 'Cleaning YouTube...' : '🧹 Clean Stale Streams'}</span>
           </button>
 
-          <button
-            onClick={() => setIsApiSettingsOpen(true)}
-            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-700 hover:border-gray-600 text-gray-200 text-sm font-semibold transition-all hover:bg-gray-800"
-          >
-            <Settings className="w-4 h-4 text-gray-400" />
-            <span>Google API Settings</span>
-          </button>
+          {userRole === 'admin' && (
+            <button
+              onClick={() => setIsApiSettingsOpen(true)}
+              className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-700 hover:border-gray-600 text-gray-200 text-sm font-semibold transition-all hover:bg-gray-800"
+            >
+              <Settings className="w-4 h-4 text-gray-400" />
+              <span>Google API Settings</span>
+            </button>
+          )}
 
           <button
             onClick={handleOpenCreateModal}
             className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-sm font-bold shadow-lg shadow-red-900/30 transition-all hover:scale-[1.02]"
           >
             <Plus className="w-4 h-4" />
-            <span>New Auto Task</span>
+            <span>New Stream Container</span>
           </button>
         </div>
       </div>
@@ -475,7 +481,16 @@ export default function AutoStreamPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-white flex items-center space-x-2">
             <Radio className="w-5 h-5 text-red-500" />
-            <span>Connected YouTube Channels ({channels.length})</span>
+            <span>
+              {userRole === 'admin'
+                ? `All Connected YouTube Channels (${channels.length})`
+                : `My Connected YouTube Channels (${channels.length})`}
+            </span>
+            {userRole === 'admin' && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300 border border-blue-500/30 font-mono">
+                Admin View
+              </span>
+            )}
           </h2>
           <button
             onClick={handleConnectYouTube}
@@ -522,7 +537,14 @@ export default function AutoStreamPage() {
                   )}
                   <div className="truncate">
                     <h4 className="text-sm font-bold text-white truncate">{ch.title}</h4>
-                    <p className="text-xs text-gray-500 truncate">ID: {ch.id}</p>
+                    <div className="flex items-center space-x-2 mt-0.5">
+                      <p className="text-xs text-gray-500 truncate">ID: {ch.id}</p>
+                      {userRole === 'admin' && ch.userId && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-950/80 text-blue-300 border border-blue-500/30 font-mono">
+                          {ch.userId}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <button
@@ -544,10 +566,21 @@ export default function AutoStreamPage() {
           <div>
             <h2 className="text-lg font-bold text-white flex items-center space-x-2">
               <Box className="w-5 h-5 text-purple-400" />
-              <span>Active Stream Containers ({tasks.length})</span>
+              <span>
+                {userRole === 'admin'
+                  ? `All Active Stream Containers (${tasks.length})`
+                  : `My Active Stream Containers (${tasks.length})`}
+              </span>
+              {userRole === 'admin' && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300 border border-blue-500/30 font-mono">
+                  Admin View
+                </span>
+              )}
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              Each container runs an isolated FFmpeg process. Starting, stopping, or deleting a container controls only its own live stream.
+              {userRole === 'admin'
+                ? 'Showing all stream containers from all users. You can start, stop, edit, and monitor any container.'
+                : 'Each container runs an isolated FFmpeg process. Starting, stopping, or deleting a container controls only your own live stream.'}
             </p>
           </div>
           <button
@@ -605,6 +638,11 @@ export default function AutoStreamPage() {
                         <Box className="w-3 h-3 text-purple-400" />
                         <span>CONTAINER #{task.id.slice(0, 8).toUpperCase()}</span>
                       </span>
+                      {userRole === 'admin' && (
+                        <span className="px-2 py-0.5 rounded font-mono text-[10px] bg-blue-950/80 text-blue-300 border border-blue-500/40">
+                          User: {task.userId || 'admin'}
+                        </span>
+                      )}
                       {isStreaming && (
                         <span className="px-2 py-0.5 rounded font-mono text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
                           PID: {activePid || 'Active'}

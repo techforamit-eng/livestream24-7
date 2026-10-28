@@ -23,7 +23,7 @@ export async function GET() {
   let channels = config.connectedChannels || [];
 
   if (userId !== 'admin') {
-    channels = channels.filter(c => c.userId === userId);
+    channels = channels.filter(c => (c.userId || 'admin') === userId);
   }
 
   // Sanitize tokens from response
@@ -31,12 +31,12 @@ export async function GET() {
     id: c.id,
     title: c.title,
     thumbnail: c.thumbnail,
-    userId: c.userId,
+    userId: c.userId || 'admin',
     connectedAt: c.connectedAt,
     hasRefreshToken: !!c.tokens.refresh_token
   }));
 
-  return NextResponse.json({ success: true, channels: sanitized });
+  return NextResponse.json({ success: true, channels: sanitized, userRole: userId });
 }
 
 export async function DELETE(req: Request) {
@@ -55,7 +55,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: false, message: 'Channel not found' }, { status: 404 });
   }
 
-  if (userId !== 'admin' && channel.userId !== userId) {
+  if (userId !== 'admin' && (channel.userId || 'admin') !== userId) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
   }
 

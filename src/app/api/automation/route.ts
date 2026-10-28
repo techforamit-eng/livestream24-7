@@ -28,11 +28,11 @@ export async function GET() {
   let tasks = config.autoTasks || [];
 
   if (userId !== 'admin') {
-    tasks = tasks.filter(t => t.userId === userId);
+    tasks = tasks.filter(t => (t.userId || 'admin') === userId);
   }
 
   const statuses = getAutoTaskStatuses();
-  return NextResponse.json({ success: true, tasks, statuses });
+  return NextResponse.json({ success: true, tasks, statuses, userRole: userId });
 }
 
 export async function POST(req: Request) {
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Task not found' }, { status: 404 });
     }
 
-    if (userId !== 'admin' && task.userId !== userId) {
+    if (userId !== 'admin' && (task.userId || 'admin') !== userId) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
     }
 
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
     if (!found) {
       return NextResponse.json({ success: false, message: 'Task not found' }, { status: 404 });
     }
-    if (userId !== 'admin' && found.userId !== userId) {
+    if (userId !== 'admin' && (found.userId || 'admin') !== userId) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
     }
 
@@ -241,7 +241,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: false, message: 'Task not found' }, { status: 404 });
   }
 
-  if (userId !== 'admin' && found.userId !== userId) {
+  if (userId !== 'admin' && (found.userId || 'admin') !== userId) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
   }
 
