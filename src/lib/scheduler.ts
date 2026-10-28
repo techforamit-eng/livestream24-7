@@ -300,7 +300,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
         });
         activeBroadcasts[channelId] = streamInfo;
         endpoints.push({ url: streamInfo.rtmpUrl, key: streamInfo.streamKey });
-        addAutoLog(task.id, `Created YouTube broadcast for channel ${channelId} (ID: ${streamInfo.broadcastId}) with Title, Description, Tags & Thumbnail`);
+        addAutoLog(task.id, `Created YouTube broadcast for channel ${channelId} (ID: ${streamInfo.broadcastId}) with Auto-Monetization, Title, Tags & Thumbnail`);
       } catch (err: any) {
         addAutoLog(task.id, `Failed to create broadcast on channel ${channelId}: ${err.message}`);
       }

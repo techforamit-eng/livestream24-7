@@ -168,28 +168,48 @@ export async function createLiveBroadcastAndStream(channelId: string, options: {
 }) {
   const youtube = await getAuthenticatedYouTube(channelId);
 
-  // 1. Create Live Broadcast with AutoStart and AutoStop enabled
+  // 1. Create Live Broadcast with AutoStart, AutoStop, and Automatic Monetization
   const scheduledStartTime = new Date(Date.now() + 60 * 1000).toISOString(); // 1 minute in future
-  const broadcastRes = await youtube.liveBroadcasts.insert({
-    part: ['snippet', 'status', 'contentDetails'],
-    requestBody: {
-      snippet: {
-        title: options.title || `Live Stream - ${new Date().toLocaleString()}`,
-        description: options.description || 'Automated Live Stream via VMagic',
-        scheduledStartTime: scheduledStartTime
-      },
-      status: {
-        privacyStatus: options.privacyStatus || 'public',
-        selfDeclaredMadeForKids: false
-      },
-      contentDetails: {
-        enableAutoStart: true,
-        enableAutoStop: true, // Automatically completes broadcast when FFmpeg stops, archiving it as a permanent video
-        enableDvr: true,
-        recordFromStart: true
+  const broadcastPayload: any = {
+    snippet: {
+      title: options.title || `Live Stream - ${new Date().toLocaleString()}`,
+      description: options.description || 'Automated Live Stream via VMagic',
+      scheduledStartTime: scheduledStartTime
+    },
+    status: {
+      privacyStatus: options.privacyStatus || 'public',
+      selfDeclaredMadeForKids: false
+    },
+    contentDetails: {
+      enableAutoStart: true,
+      enableAutoStop: true, // Automatically completes broadcast when FFmpeg stops, archiving it as a permanent video
+      enableDvr: true,
+      recordFromStart: true
+    },
+    monetizationDetails: {
+      cuepointSchedule: {
+        enabled: true
       }
     }
-  });
+  };
+
+  let broadcastRes;
+  try {
+    // Attempt creation with automatic monetization and mid-roll ads enabled
+    broadcastRes = await youtube.liveBroadcasts.insert({
+      part: ['snippet', 'status', 'contentDetails', 'monetizationDetails'],
+      requestBody: broadcastPayload
+    });
+    console.log(`[YouTube] Broadcast created with Automatic Monetization enabled!`);
+  } catch (monetizeErr: any) {
+    console.warn(`[YouTube] Could not create with monetizationDetails (${monetizeErr.message}). Falling back to standard creation...`);
+    const fallbackPayload = { ...broadcastPayload };
+    delete fallbackPayload.monetizationDetails;
+    broadcastRes = await youtube.liveBroadcasts.insert({
+      part: ['snippet', 'status', 'contentDetails'],
+      requestBody: fallbackPayload
+    });
+  }
 
   const broadcastId = broadcastRes.data.id!;
 
