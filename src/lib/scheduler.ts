@@ -8,6 +8,45 @@ import { getFFmpegPath } from './ffmpegPath';
 const VIDEOS_DIR = path.join(process.cwd(), 'public', 'videos');
 const AUTO_PIDS_FILE = path.join(process.cwd(), 'active_auto_pids.json');
 
+/**
+ * Safely resolves a thumbnail file on disk across user directories and fallbacks
+ */
+export function resolveThumbnailPath(thumbnailName?: string, role: string = 'admin'): string | undefined {
+  if (!thumbnailName || typeof thumbnailName !== 'string' || !thumbnailName.trim()) {
+    return undefined;
+  }
+
+  const cleanName = path.basename(thumbnailName.trim());
+  const publicThumbDir = path.join(process.cwd(), 'public', 'thumbnails');
+
+  // 1. Check user folder: public/thumbnails/{role}/{cleanName}
+  const rolePath = path.join(publicThumbDir, role, cleanName);
+  if (fs.existsSync(rolePath)) return rolePath;
+
+  // 2. Check admin folder: public/thumbnails/admin/{cleanName}
+  const adminPath = path.join(publicThumbDir, 'admin', cleanName);
+  if (fs.existsSync(adminPath)) return adminPath;
+
+  // 3. Check directly in public/thumbnails/{cleanName}
+  const directPath = path.join(publicThumbDir, cleanName);
+  if (fs.existsSync(directPath)) return directPath;
+
+  // 4. Scan all subdirectories in public/thumbnails
+  try {
+    if (fs.existsSync(publicThumbDir)) {
+      const subdirs = fs.readdirSync(publicThumbDir, { withFileTypes: true });
+      for (const dirent of subdirs) {
+        if (dirent.isDirectory()) {
+          const subPath = path.join(publicThumbDir, dirent.name, cleanName);
+          if (fs.existsSync(subPath)) return subPath;
+        }
+      }
+    }
+  } catch (e) { }
+
+  return undefined;
+}
+
 // Global mutex to prevent duplicate parallel start executions
 const startingTasks: Set<string> = (global as any).startingTasks || new Set<string>();
 (global as any).startingTasks = startingTasks;
@@ -282,10 +321,18 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     const activeBroadcasts: Record<string, { broadcastId: string; streamId: string; streamKey: string; rtmpUrl: string }> = {};
     const endpoints: { url: string; key: string }[] = [];
 
-    // Resolve thumbnail path if set
-    const thumbnailPath = task.broadcastSettings?.thumbnail
-      ? path.join(process.cwd(), 'public', 'thumbnails', role, task.broadcastSettings.thumbnail)
-      : undefined;
+    // Resolve thumbnail path reliably across role & fallbacks
+    const thumbnailName = task.broadcastSettings?.thumbnail?.trim();
+    let thumbnailPath: string | undefined = undefined;
+
+    if (thumbnailName) {
+      thumbnailPath = resolveThumbnailPath(thumbnailName, role);
+      if (thumbnailPath) {
+        addAutoLog(task.id, `[Thumbnail] Using custom thumbnail: "${path.basename(thumbnailPath)}"`);
+      } else {
+        addAutoLog(task.id, `[Thumbnail] ⚠️ Warning: Thumbnail "${thumbnailName}" was not found in storage.`);
+      }
+    }
 
     // Create YouTube broadcast & stream for each unique channel
     for (const channelId of uniqueChannels) {
@@ -300,7 +347,17 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
         });
         activeBroadcasts[channelId] = streamInfo;
         endpoints.push({ url: streamInfo.rtmpUrl, key: streamInfo.streamKey });
-        addAutoLog(task.id, `Created YouTube broadcast for channel ${channelId} (ID: ${streamInfo.broadcastId}) with Auto-Monetization, Title, Tags & Thumbnail`);
+
+        let thumbLog = '';
+        if (thumbnailPath) {
+          if (streamInfo.thumbnailUploaded) {
+            thumbLog = ' | Custom Thumbnail: Applied ✅';
+          } else {
+            thumbLog = ` | Custom Thumbnail: ⚠️ Failed (${streamInfo.thumbnailError || 'Check phone verification for custom thumbnails'})`;
+          }
+        }
+
+        addAutoLog(task.id, `Created YouTube broadcast for channel ${channelId} (ID: ${streamInfo.broadcastId})${thumbLog}`);
       } catch (err: any) {
         addAutoLog(task.id, `Failed to create broadcast on channel ${channelId}: ${err.message}`);
       }

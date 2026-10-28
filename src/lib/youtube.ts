@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import fs from 'fs';
+import path from 'path';
 import { getConfig, saveConfig, ConnectedChannel } from './config';
 
 /**
@@ -59,7 +60,8 @@ export function getAuthUrl(originUrl?: string) {
   const scopes = [
     'https://www.googleapis.com/auth/youtube.readonly',
     'https://www.googleapis.com/auth/youtube',
-    'https://www.googleapis.com/auth/youtube.force-ssl'
+    'https://www.googleapis.com/auth/youtube.force-ssl',
+    'https://www.googleapis.com/auth/youtube.upload'
   ];
 
   return oauth2Client.generateAuthUrl({
@@ -274,17 +276,45 @@ export async function createLiveBroadcastAndStream(channelId: string, options: {
   }
 
   // 5. Upload Custom Thumbnail if provided
-  if (options.thumbnailPath && fs.existsSync(options.thumbnailPath)) {
-    try {
-      await youtube.thumbnails.set({
-        videoId: broadcastId,
-        media: {
-          mimeType: options.thumbnailPath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg',
-          body: fs.createReadStream(options.thumbnailPath)
+  let thumbnailUploaded = false;
+  let thumbnailError: string | undefined;
+
+  if (options.thumbnailPath) {
+    if (!fs.existsSync(options.thumbnailPath)) {
+      thumbnailError = `Thumbnail file not found at path: ${options.thumbnailPath}`;
+      console.warn(`[YouTube] ${thumbnailError}`);
+    } else {
+      // YouTube requires 1.5 - 2 seconds after broadcast creation & binding before accepting thumbnails
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const ext = path.extname(options.thumbnailPath).toLowerCase();
+      const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          console.log(`[YouTube] Uploading custom thumbnail for broadcast ${broadcastId} (attempt ${attempt}/3)...`);
+          await youtube.thumbnails.set({
+            videoId: broadcastId,
+            media: {
+              mimeType,
+              body: fs.createReadStream(options.thumbnailPath)
+            }
+          });
+          thumbnailUploaded = true;
+          thumbnailError = undefined;
+          console.log(`[YouTube] Successfully applied custom thumbnail for broadcast ${broadcastId}!`);
+          break;
+        } catch (thumbErr: any) {
+          const rawMsg = thumbErr.response?.data?.error?.message || thumbErr.message || 'Unknown thumbnail upload error';
+          thumbnailError = rawMsg;
+          console.warn(`[YouTube] Thumbnail upload attempt ${attempt} failed for broadcast ${broadcastId}:`, rawMsg);
+
+          if (attempt < 3) {
+            // Wait 2.5 seconds before next retry
+            await new Promise(resolve => setTimeout(resolve, 2500));
+          }
         }
-      });
-    } catch (thumbErr: any) {
-      console.warn(`[YouTube] Could not upload thumbnail for broadcast ${broadcastId}:`, thumbErr.message);
+      }
     }
   }
 
@@ -292,8 +322,36 @@ export async function createLiveBroadcastAndStream(channelId: string, options: {
     broadcastId,
     streamId,
     rtmpUrl,
-    streamKey
+    streamKey,
+    thumbnailUploaded,
+    thumbnailError
   };
+}
+
+/**
+ * Upload and apply custom thumbnail to any existing broadcast / video
+ */
+export async function setBroadcastThumbnail(channelId: string, broadcastId: string, thumbnailPath: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    if (!fs.existsSync(thumbnailPath)) {
+      return { success: false, message: `Thumbnail file not found at: ${thumbnailPath}` };
+    }
+    const youtube = await getAuthenticatedYouTube(channelId);
+    const ext = path.extname(thumbnailPath).toLowerCase();
+    const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
+
+    await youtube.thumbnails.set({
+      videoId: broadcastId,
+      media: {
+        mimeType,
+        body: fs.createReadStream(thumbnailPath)
+      }
+    });
+    return { success: true };
+  } catch (err: any) {
+    const rawMsg = err.response?.data?.error?.message || err.message || 'Failed to upload thumbnail';
+    return { success: false, message: rawMsg };
+  }
 }
 
 /**

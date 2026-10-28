@@ -1392,30 +1392,34 @@ export default function AutoStreamPage() {
                         />
                       </label>
 
-                      {editingTask.broadcastSettings?.thumbnail && (
-                        <div className="flex items-center space-x-2">
-                          <img
-                            src={`/thumbnails/${(editingTask as any).userId || 'admin'}/${editingTask.broadcastSettings.thumbnail}`}
-                            alt="Selected Thumbnail"
-                            className="w-14 h-9 object-cover rounded border border-red-500/50 shadow"
-                            onError={(e: any) => { e.target.style.display = 'none'; }}
-                          />
-                          <span className="text-[11px] text-emerald-400 font-medium truncate max-w-[150px]">
-                            {editingTask.broadcastSettings.thumbnail}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setEditingTask({
-                              ...editingTask,
-                              broadcastSettings: { ...editingTask.broadcastSettings!, thumbnail: '' }
-                            })}
-                            className="text-gray-500 hover:text-red-400 text-xs"
-                            title="Remove Thumbnail"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      )}
+                      {editingTask.broadcastSettings?.thumbnail && (() => {
+                        const thumbObj = thumbnails.find(t => t.name === editingTask.broadcastSettings?.thumbnail);
+                        const imgSrc = thumbObj?.url || `/thumbnails/${(editingTask as any).userId || 'admin'}/${editingTask.broadcastSettings.thumbnail}`;
+                        return (
+                          <div className="flex items-center space-x-2">
+                            <img
+                              src={imgSrc}
+                              alt="Selected Thumbnail"
+                              className="w-14 h-9 object-cover rounded border border-purple-500/50 shadow"
+                              onError={(e: any) => { e.target.style.display = 'none'; }}
+                            />
+                            <span className="text-[11px] text-emerald-400 font-medium truncate max-w-[150px]">
+                              {editingTask.broadcastSettings.thumbnail}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setEditingTask({
+                                ...editingTask,
+                                broadcastSettings: { ...editingTask.broadcastSettings!, thumbnail: '' }
+                              })}
+                              className="text-gray-500 hover:text-red-400 text-xs"
+                              title="Remove Thumbnail"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Quick pick & delete from existing thumbnails */}

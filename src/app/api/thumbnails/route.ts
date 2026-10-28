@@ -25,16 +25,38 @@ export async function GET() {
 
   if (!fs.existsSync(userDir)) {
     fs.mkdirSync(userDir, { recursive: true });
-    return NextResponse.json({ success: true, thumbnails: [] });
   }
 
-  const files = fs.readdirSync(userDir);
-  const images = files.filter(f => /\.(jpe?g|png|webp)$/i.test(f)).map(f => ({
-    name: f,
-    url: `/thumbnails/${role}/${f}`
-  }));
+  const thumbMap = new Map<string, { name: string; url: string }>();
 
-  return NextResponse.json({ success: true, thumbnails: images });
+  const scanDir = (dir: string, urlPrefix: string) => {
+    if (fs.existsSync(dir)) {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isFile() && /\.(jpe?g|png|webp)$/i.test(entry.name) && !thumbMap.has(entry.name)) {
+            thumbMap.set(entry.name, {
+              name: entry.name,
+              url: `${urlPrefix}/${entry.name}`
+            });
+          }
+        }
+      } catch (e) { }
+    }
+  };
+
+  // Primary: User's directory
+  scanDir(userDir, `/thumbnails/${role}`);
+
+  // Secondary: Admin presets if regular user
+  if (role !== 'admin') {
+    scanDir(path.join(THUMBNAILS_DIR, 'admin'), '/thumbnails/admin');
+  }
+
+  // Tertiary: Root public/thumbnails if any
+  scanDir(THUMBNAILS_DIR, '/thumbnails');
+
+  return NextResponse.json({ success: true, thumbnails: Array.from(thumbMap.values()) });
 }
 
 export async function POST(req: Request) {
@@ -51,6 +73,14 @@ export async function POST(req: Request) {
 
     if (!file) {
       return NextResponse.json({ success: false, message: 'No thumbnail file uploaded' }, { status: 400 });
+    }
+
+    // YouTube 2MB limit check
+    if (file.size > 2 * 1024 * 1024) {
+      return NextResponse.json({
+        success: false,
+        message: 'YouTube limits custom thumbnails to a maximum of 2MB. Please compress or choose an image under 2MB.'
+      }, { status: 400 });
     }
 
     const ext = path.extname(file.name).toLowerCase();
@@ -86,7 +116,14 @@ export async function DELETE(req: Request) {
 
     const safeName = path.basename(filename);
     const userDir = path.join(THUMBNAILS_DIR, role);
-    const filePath = path.join(userDir, safeName);
+    let filePath = path.join(userDir, safeName);
+
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(THUMBNAILS_DIR, 'admin', safeName);
+    }
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(THUMBNAILS_DIR, safeName);
+    }
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
