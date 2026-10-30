@@ -373,8 +373,9 @@ export async function transitionBroadcast(channelId: string, broadcastId: string
 
 /**
  * Complete a live broadcast, preserving the recorded video permanently on YouTube
+ * Also deletes the ephemeral RTMP stream key so YouTube Studio remains clean.
  */
-export async function endOrCleanupBroadcast(channelId: string, broadcastId: string) {
+export async function endOrCleanupBroadcast(channelId: string, broadcastId: string, streamId?: string) {
   try {
     const youtube = await getAuthenticatedYouTube(channelId);
 
@@ -390,6 +391,11 @@ export async function endOrCleanupBroadcast(channelId: string, broadcastId: stri
 
     // If already completed, video is already archived on YouTube
     if (currentStatus === 'complete') {
+      if (streamId) {
+        try {
+          await youtube.liveStreams.delete({ id: streamId });
+        } catch (sErr: any) { }
+      }
       return { success: true, action: 'completed', status: 'complete' };
     }
 
@@ -400,11 +406,20 @@ export async function endOrCleanupBroadcast(channelId: string, broadcastId: stri
         broadcastStatus: 'complete',
         part: ['id', 'status']
       });
+
+      if (streamId) {
+        try {
+          await youtube.liveStreams.delete({ id: streamId });
+        } catch (sErr: any) { }
+      }
+
       return { success: true, action: 'completed', status: res.data.status?.lifeCycleStatus };
     } catch (transErr: any) {
-      // IMPORTANT: DO NOT DELETE the broadcast!
-      // When enableAutoStop is true, YouTube will automatically archive the stream as a normal video.
-      console.log(`[YouTube] Broadcast ${broadcastId} status note: ${transErr.message}. Preserving video recording on channel.`);
+      if (streamId) {
+        try {
+          await youtube.liveStreams.delete({ id: streamId });
+        } catch (sErr: any) { }
+      }
       return { success: true, action: 'preserved_as_video', message: transErr.message };
     }
   } catch (err: any) {
@@ -436,7 +451,7 @@ export async function cleanupChannelBroadcasts(channelId: string) {
       part: ['id', 'snippet', 'status'],
       broadcastType: 'all',
       mine: true,
-      maxResults: 25
+      maxResults: 50
     });
 
     const items = listRes.data.items || [];
@@ -456,11 +471,9 @@ export async function cleanupChannelBroadcasts(channelId: string) {
           });
           cleanedCount++;
         } catch (e) {
-          // Keep video safe, do not delete!
           cleanedCount++;
         }
       } else if (status === 'ready' || status === 'created') {
-        // Only unstarted, empty draft streams are deleted
         try {
           await youtube.liveBroadcasts.delete({ id: bId });
           cleanedCount++;
@@ -471,5 +484,47 @@ export async function cleanupChannelBroadcasts(channelId: string) {
     return { success: true, cleanedCount, message: `Successfully cleaned ${cleanedCount} duplicate/stale broadcast(s) on YouTube!` };
   } catch (err: any) {
     return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Clean up unused or duplicate custom stream keys from YouTube Studio
+ */
+export async function cleanupChannelStreamKeys(channelId: string, activeStreamIds: string[] = []) {
+  try {
+    const youtube = await getAuthenticatedYouTube(channelId);
+    const listRes = await youtube.liveStreams.list({
+      part: ['id', 'snippet', 'status'],
+      mine: true,
+      maxResults: 50
+    });
+
+    const items = listRes.data.items || [];
+    let cleanedCount = 0;
+
+    for (const item of items) {
+      const sId = item.id;
+      if (!sId) continue;
+
+      // Do NOT delete if this key is currently active in any running container!
+      if (activeStreamIds.includes(sId)) {
+        continue;
+      }
+
+      const title = item.snippet?.title || '';
+      const isAuto = title.startsWith('Stream for ') || title.includes('VMagic') || title.includes('Live Stream');
+      const streamStatus = item.status?.streamStatus; // 'ready', 'active', 'inactive', 'error'
+
+      if (isAuto && streamStatus !== 'active') {
+        try {
+          await youtube.liveStreams.delete({ id: sId });
+          cleanedCount++;
+        } catch (delErr: any) { }
+      }
+    }
+
+    return { success: true, cleanedCount, message: `Successfully cleaned ${cleanedCount} unused stream key(s) on YouTube!` };
+  } catch (err: any) {
+    return { success: false, cleanedCount: 0, message: err.message };
   }
 }

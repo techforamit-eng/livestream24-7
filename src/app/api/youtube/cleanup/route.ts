@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { cleanupChannelBroadcasts } from '@/lib/youtube';
+import { cleanupChannelBroadcasts, cleanupChannelStreamKeys } from '@/lib/youtube';
 import { getConfig } from '@/lib/config';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
@@ -31,6 +31,17 @@ export async function POST(req: Request) {
       channels = channels.filter(c => (c.userId || 'admin') === userId);
     }
 
+    // Identify all currently active stream IDs so we NEVER delete a key in active use!
+    const activeTasks = (config.autoTasks || []).filter(t => t.state === 'streaming');
+    const activeStreamIds: string[] = [];
+    for (const t of activeTasks) {
+      if (t.activeBroadcasts) {
+        for (const b of Object.values(t.activeBroadcasts)) {
+          if (b.streamId) activeStreamIds.push(b.streamId);
+        }
+      }
+    }
+
     if (channelId) {
       const target = (config.connectedChannels || []).find(c => c.id === channelId);
       if (!target) {
@@ -39,23 +50,36 @@ export async function POST(req: Request) {
       if (userId !== 'admin' && (target.userId || 'admin') !== userId) {
         return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
       }
-      const res = await cleanupChannelBroadcasts(channelId);
-      return NextResponse.json(res);
+      const bRes = await cleanupChannelBroadcasts(channelId);
+      const sRes = await cleanupChannelStreamKeys(channelId, activeStreamIds);
+      const total = (bRes.cleanedCount || 0) + (sRes.cleanedCount || 0);
+      return NextResponse.json({
+        success: true,
+        cleanedCount: total,
+        message: `Cleaned ${bRes.cleanedCount || 0} stale broadcast(s) and ${sRes.cleanedCount || 0} unused stream key(s) on YouTube.`
+      });
     }
 
     // Clean channels owned by user (or all if admin)
-    let totalCleaned = 0;
+    let totalCleanedBroadcasts = 0;
+    let totalCleanedStreams = 0;
+
     for (const ch of channels) {
-      const res = await cleanupChannelBroadcasts(ch.id);
-      if (res.success && res.cleanedCount) {
-        totalCleaned += res.cleanedCount;
+      const bRes = await cleanupChannelBroadcasts(ch.id);
+      if (bRes.success && bRes.cleanedCount) {
+        totalCleanedBroadcasts += bRes.cleanedCount;
+      }
+      const sRes = await cleanupChannelStreamKeys(ch.id, activeStreamIds);
+      if (sRes.success && sRes.cleanedCount) {
+        totalCleanedStreams += sRes.cleanedCount;
       }
     }
 
+    const grandTotal = totalCleanedBroadcasts + totalCleanedStreams;
     return NextResponse.json({
       success: true,
-      cleanedCount: totalCleaned,
-      message: `Cleaned ${totalCleaned} duplicate/stale broadcast(s) across ${channels.length} channel(s) on YouTube!`
+      cleanedCount: grandTotal,
+      message: `Cleaned ${totalCleanedBroadcasts} stale broadcast(s) and ${totalCleanedStreams} unused stream key(s) across ${channels.length} channel(s) on YouTube!`
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });

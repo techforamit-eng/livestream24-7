@@ -286,7 +286,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       for (const [chId, bInfo] of Object.entries(task.activeBroadcasts)) {
         if (bInfo?.broadcastId) {
           try {
-            await endOrCleanupBroadcast(chId, bInfo.broadcastId);
+            await endOrCleanupBroadcast(chId, bInfo.broadcastId, bInfo.streamId);
           } catch (e) { }
         }
       }
@@ -618,7 +618,7 @@ export async function stopAutoStreamTask(taskId: string, reason: string = 'Sessi
     for (const [channelId, info] of Object.entries(broadcasts)) {
       if (info && info.broadcastId) {
         try {
-          const res = await endOrCleanupBroadcast(channelId, info.broadcastId);
+          const res = await endOrCleanupBroadcast(channelId, info.broadcastId, info.streamId);
           if (res.success) {
             addAutoLog(taskId, `Live stream ended for broadcast ${info.broadcastId} on channel ${channelId}. Saved permanently as video.`);
           } else {
