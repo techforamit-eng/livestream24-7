@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, Play, Square, RotateCw, Plus, Trash2, Settings, Video, Clock,
   Repeat, ShieldAlert, CheckCircle2, AlertCircle, ExternalLink, Key,
-  Sliders, Cpu, Copy, Check, Eye, EyeOff, Radio, Image as ImageIcon, Tag, Upload, FileText, Box
+  Sliders, Cpu, Copy, Check, Eye, EyeOff, Radio, Image as ImageIcon, Tag, Upload, FileText, Box, AlertOctagon
 } from 'lucide-react';
 import type { AutoStreamTask } from '@/lib/config';
 
@@ -44,6 +44,7 @@ export default function AutoStreamPage() {
   const [mounted, setMounted] = useState(false);
   const [tagsInputText, setTagsInputText] = useState('');
   const [isCleaning, setIsCleaning] = useState(false);
+  const [isKillingAll, setIsKillingAll] = useState(false);
 
   const fetchTasks = async () => {
     try {
@@ -226,6 +227,31 @@ export default function AutoStreamPage() {
       setMessage({ text: 'Error cleaning broadcasts: ' + err.message, type: 'error' });
     } finally {
       setIsCleaning(false);
+    }
+  };
+
+  const handleKillAllFFmpeg = async () => {
+    if (!confirm('⚠️ EMERGENCY KILL SWITCH\n\nAre you sure you want to FORCEFULLY STOP all active live streams and KILL ALL FFmpeg processes across the entire VPS?\n\nThis will immediately terminate all active broadcasts on the server.')) {
+      return;
+    }
+    setIsKillingAll(true);
+    try {
+      const res = await fetch('/api/automation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'kill_all' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: data.message || 'All FFmpeg processes killed and streams stopped!', type: 'success' });
+        fetchTasks();
+      } else {
+        setMessage({ text: data.message || 'Failed to kill streams', type: 'error' });
+      }
+    } catch (err: any) {
+      setMessage({ text: 'Error: ' + err.message, type: 'error' });
+    } finally {
+      setIsKillingAll(false);
     }
   };
 
@@ -429,10 +455,20 @@ export default function AutoStreamPage() {
             onClick={handleCleanupStaleBroadcasts}
             disabled={isCleaning}
             className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/60 text-amber-300 text-sm font-semibold transition-all hover:bg-amber-500/20 disabled:opacity-50"
-            title="End and delete all stale/duplicate broadcasts in YouTube Studio"
+            title="End and delete all stale/duplicate broadcasts and stream keys in YouTube Studio"
           >
             <RotateCw className={`w-4 h-4 ${isCleaning ? 'animate-spin text-amber-400' : 'text-amber-400'}`} />
             <span>{isCleaning ? 'Cleaning YouTube...' : '🧹 Clean Stale Streams'}</span>
+          </button>
+
+          <button
+            onClick={handleKillAllFFmpeg}
+            disabled={isKillingAll}
+            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-red-600/15 border border-red-500/40 hover:border-red-500 text-red-400 text-sm font-semibold transition-all hover:bg-red-600/25 disabled:opacity-50 shadow-sm"
+            title="Emergency kill switch: forcefully stop all live streams and terminate all FFmpeg processes on VPS"
+          >
+            <AlertOctagon className={`w-4 h-4 ${isKillingAll ? 'animate-spin text-red-400' : 'text-red-400'}`} />
+            <span>{isKillingAll ? 'Stopping All...' : '🛑 Kill All FFmpeg'}</span>
           </button>
 
           {userRole === 'admin' && (

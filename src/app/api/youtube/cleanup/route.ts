@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const userId = await getUserId();
     const body = await req.json().catch(() => ({}));
     let { channelId } = body;
-    
+
     const config = getConfig();
     let channels = config.connectedChannels || [];
 

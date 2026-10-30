@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getConfig, saveConfig, AutoStreamTask } from '@/lib/config';
-import { initAutomationScheduler, getAutoTaskStatuses, startAutoStreamTask, stopAutoStreamTask } from '@/lib/scheduler';
+import { initAutomationScheduler, getAutoTaskStatuses, startAutoStreamTask, stopAutoStreamTask, killAllFFmpeg } from '@/lib/scheduler';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -39,9 +39,16 @@ export async function POST(req: Request) {
   const userId = await getUserId();
   const body = await req.json();
 
-  // Action trigger (manual start, manual stop, toggle enable/disable)
+  // Action trigger (manual start, manual stop, toggle enable/disable, emergency kill all)
   if (body.action) {
     const { action, taskId } = body;
+
+    // Master Emergency Kill Switch
+    if (action === 'kill_all') {
+      const res = await killAllFFmpeg(userId);
+      return NextResponse.json(res);
+    }
+
     const config = getConfig();
     const task = (config.autoTasks || []).find(t => t.id === taskId);
 

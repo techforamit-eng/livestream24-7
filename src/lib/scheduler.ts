@@ -658,6 +658,73 @@ export async function stopAutoStreamTask(taskId: string, reason: string = 'Sessi
 }
 
 /**
+ * Master emergency kill switch: kills all FFmpeg processes on the VPS and stops all containers/streams
+ */
+export async function killAllFFmpeg(userId?: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const config = getConfig();
+    const tasks = config.autoTasks || [];
+
+    // 1. Cleanly stop each auto-stream task and its YouTube broadcasts
+    for (const t of tasks) {
+      if (userId && userId !== 'admin' && (t.userId || 'admin') !== userId) {
+        continue;
+      }
+      try {
+        await stopAutoStreamTask(t.id, 'Emergency Kill All triggered');
+      } catch (e) { }
+    }
+
+    // 2. Also stop manual streams if any
+    try {
+      const { activeStreams, stopStream } = await import('./stream');
+      for (const [sId] of activeStreams.entries()) {
+        try {
+          stopStream(sId);
+        } catch (e) { }
+      }
+    } catch (e) { }
+
+    // 3. System-level force kill of ANY lingering FFmpeg process on OS
+    try {
+      if (process.platform === 'win32') {
+        execSync('taskkill /F /IM ffmpeg.exe 2>nul || exit 0', { stdio: 'ignore' });
+      } else {
+        execSync('killall -9 ffmpeg 2>/dev/null || pkill -9 ffmpeg 2>/dev/null || true', { stdio: 'ignore' });
+      }
+    } catch (e) { }
+
+    // 4. Wipe PID files
+    try {
+      fs.writeFileSync(AUTO_PIDS_FILE, '{}');
+      const pidsFile = path.join(process.cwd(), 'active_pids.json');
+      if (fs.existsSync(pidsFile)) fs.writeFileSync(pidsFile, '{}');
+    } catch (e) { }
+
+    // 5. Reset all task states to idle / disabled
+    const updated = (getConfig().autoTasks || []).map(t => {
+      if (!userId || userId === 'admin' || (t.userId || 'admin') === userId) {
+        return {
+          ...t,
+          enabled: false,
+          state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any,
+          pid: undefined,
+          sessionStartTime: undefined,
+          nextEventAt: undefined,
+          activeBroadcasts: undefined
+        };
+      }
+      return t;
+    });
+    saveConfig({ autoTasks: updated });
+
+    return { success: true, message: 'All FFmpeg processes on VPS forcefully killed and all streams stopped!' };
+  } catch (err: any) {
+    return { success: false, message: `Failed to kill all FFmpeg: ${err.message}` };
+  }
+}
+
+/**
  * Tick handler evaluated periodically
  */
 async function processAutomationTick() {
