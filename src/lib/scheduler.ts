@@ -399,7 +399,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       outputUrl = endpoints.map(ep => {
         const rtmpBase = ep.url.endsWith('/') ? ep.url : ep.url + '/';
         const full = `${rtmpBase}${ep.key.trim()}`;
-        return `[f=fifo:fifo_format=flv:onfail=ignore:drop_pkts_on_overflow=1:attempt_recovery=1:recovery_wait_time=1:format_opts=flvflags\\=no_duration_filesize]${full}`;
+        return `[f=flv:onfail=ignore]${full}`;
       }).join('|');
     }
 
@@ -412,9 +412,10 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     ];
 
     if (isUltraLow) {
-      // Direct stream copy - near 0% CPU consumption!
+      // Direct stream copy with H.264 FLV codec tag compatibility
       args.push(
         '-c:v', 'copy',
+        '-tag:v', '7',
         '-c:a', 'aac',
         '-b:a', '128k',
         '-ar', '44100'
@@ -435,6 +436,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
         '-vf', `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,format=yuv420p`,
         '-r', fps,
         '-c:v', 'libx264',
+        '-tag:v', '7',
         '-preset', 'ultrafast',
         '-tune', 'zerolatency',
         '-threads', '2',
@@ -453,7 +455,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     args.push('-t', durationSeconds.toString());
 
     if (outputFormat === 'tee') {
-      args.push('-f', 'tee', '-map', '0:v', '-map', '0:a', '-flags', '+global_header');
+      args.push('-f', 'tee', '-map', '0:v?', '-map', '0:a?', '-flags', '+global_header');
     } else {
       args.push('-f', 'flv', '-flvflags', 'no_duration_filesize');
     }
@@ -461,6 +463,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     args.push('-flush_packets', '1');
     args.push(outputUrl);
 
+    const streamStartTime = Date.now();
     const ffmpegBin = getFFmpegPath();
     addAutoLog(task.id, `Starting FFmpeg process (${isUltraLow ? 'Ultra-low CPU Copy Mode' : 'Custom Transcode Mode'}) for ${durationMins} minutes...`);
     const proc = spawn(ffmpegBin, args, { stdio: 'pipe' });
@@ -511,7 +514,8 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     });
 
     proc.on('close', async (code) => {
-      addAutoLog(task.id, `FFmpeg process exited (Code: ${code})`);
+      const runDurationSec = (Date.now() - streamStartTime) / 1000;
+      addAutoLog(task.id, `FFmpeg process exited (Code: ${code}) after ${runDurationSec.toFixed(1)}s`);
       removeAutoTaskPid(task.id);
 
       const current = activeAutoTasks.get(task.id);
@@ -526,7 +530,29 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
         return;
       }
 
-      // If task is still marked as streaming, trigger completion transition
+      // If crashed immediately on startup (abnormal exit within 15 seconds)
+      if (code !== 0 && runDurationSec < 15) {
+        addAutoLog(task.id, `❌ Stream failed on startup (Exit code: ${code}). Pausing container to prevent endless cooldown/upcoming broadcast loop.`);
+        await stopAutoStreamTask(task.id, `Startup failure (Code ${code})`);
+        const resetTasks = (getConfig().autoTasks || []).map(t => {
+          if (t.id === task.id) {
+            return {
+              ...t,
+              enabled: false,
+              state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any,
+              pid: undefined,
+              sessionStartTime: undefined,
+              nextEventAt: undefined,
+              activeBroadcasts: undefined
+            };
+          }
+          return t;
+        });
+        saveConfig({ autoTasks: resetTasks });
+        return;
+      }
+
+      // If task is still marked as streaming, trigger normal completion transition
       const currentConfig = getConfig();
       const currentTask = (currentConfig.autoTasks || []).find(t => t.id === task.id);
       if (currentTask && currentTask.state === 'streaming') {
