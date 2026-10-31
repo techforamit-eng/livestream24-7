@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Square, RotateCw, Settings2, ShieldAlert, Plus, Trash2, Cpu, X, Settings, Link, Key, Video, Activity, Clock, FolderKanban } from 'lucide-react';
+import { Play, Square, RotateCw, Settings2, ShieldAlert, Plus, Trash2, Cpu, X, Settings, Link, Key, Video, Activity, Clock, FolderKanban, Zap } from 'lucide-react';
 import type { AppConfig, StreamInstance } from '@/lib/config';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -78,6 +78,7 @@ export default function StreamControl() {
       id: uuidv4(),
       name: `Stream ${config.streams.length + 1}`,
       profileIds: config.streamKeys && config.streamKeys.length > 0 ? [config.streamKeys[0].id] : [],
+      cpuMode: 'ultralow',
       resolution: '1080p',
       bitrate: '4000k',
       fps: '60',
@@ -90,7 +91,7 @@ export default function StreamControl() {
   const editStream = (streamId: string) => {
     const stream = config?.streams.find(s => s.id === streamId);
     if (stream) {
-      setEditingStream({ ...stream });
+      setEditingStream({ ...stream, cpuMode: stream.cpuMode || 'ultralow' });
       setIsCreating(false);
     }
   };
@@ -143,10 +144,13 @@ export default function StreamControl() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-        <h2 className="text-xl sm:text-2xl font-semibold text-white">Multi-Stream Control</h2>
+        <div>
+          <h2 className="text-xl sm:text-2xl font-semibold text-white">Multi-Stream Control</h2>
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">Manual live streaming with Ultra-Low CPU Direct Copy & Stream Key Collections.</p>
+        </div>
         <button
           onClick={createNewStream}
-          className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all font-semibold"
+          className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all font-semibold self-start sm:self-auto text-sm sm:text-base"
         >
           <Plus className="w-5 h-5" />
           <span>New Stream Instance</span>
@@ -159,6 +163,7 @@ export default function StreamControl() {
             const currentStatus = statuses[streamDef.id] || { status: 'Loading', uptime: 0, logs: [] };
             const isRunning = currentStatus.status === 'Running';
             const msg = messages[streamDef.id];
+            const isUltra = streamDef.cpuMode !== 'custom';
 
             return (
               <motion.div
@@ -170,17 +175,20 @@ export default function StreamControl() {
               >
                 {/* Header Strip */}
                 <div className="bg-[#161616] border-b border-gray-800 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4 flex-wrap gap-y-1">
                     <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${isRunning ? 'bg-green-500 text-green-500 animate-pulse' : 'bg-red-500 text-red-500'}`} />
-                    <h3 className="text-xl font-bold text-white">{streamDef.name}</h3>
+                    <h3 className="text-lg sm:text-xl font-bold text-white">{streamDef.name}</h3>
                     {isRunning && (
                       <span className="text-[10px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-md font-black tracking-tighter border border-green-500/20">RUNNING</span>
                     )}
                     {!isRunning && currentStatus.status !== 'Stopped' && (
                       <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-md font-black tracking-tighter border border-amber-500/20 uppercase">{currentStatus.status}</span>
                     )}
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold border ${isUltra ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-purple-950/40 text-purple-300 border-purple-500/30'}`}>
+                      {isUltra ? '⚡ ULTRA-LOW COPY' : '⚙️ TRANSCODE'}
+                    </span>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 self-end sm:self-auto shrink-0">
                     <button
                       onClick={() => editStream(streamDef.id)}
                       className="text-gray-400 hover:text-white transition-colors p-2 bg-gray-800/50 hover:bg-gray-700 rounded-lg flex items-center text-sm font-medium mr-2"
@@ -221,14 +229,18 @@ export default function StreamControl() {
                           })()}
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-gray-800/50 pb-2">
-                        <span className="text-gray-500 text-sm">Resolution</span>
-                        <span className="text-gray-200 text-sm font-medium">{streamDef.resolution} @ {streamDef.fps}fps</span>
+                      <div className="flex justify-between border-b border-gray-800/50 pb-2 items-center">
+                        <span className="text-gray-500 text-sm">Engine Mode</span>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded ${isUltra ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-300'}`}>
+                          {isUltra ? '⚡ Ultra-Low (0-1% CPU)' : `${streamDef.resolution} @ ${streamDef.fps}fps`}
+                        </span>
                       </div>
-                      <div className="flex justify-between border-b border-gray-800/50 pb-2">
-                        <span className="text-gray-500 text-sm">Bitrate Limit</span>
-                        <span className="text-gray-200 text-sm font-medium">{streamDef.bitrate}</span>
-                      </div>
+                      {!isUltra && (
+                        <div className="flex justify-between border-b border-gray-800/50 pb-2">
+                          <span className="text-gray-500 text-sm">Bitrate Limit</span>
+                          <span className="text-gray-200 text-sm font-medium">{streamDef.bitrate}</span>
+                        </div>
+                      )}
 
                       <div className="flex justify-between pb-2 items-center">
                         <span className="text-gray-500 text-sm">Active Video</span>
@@ -341,7 +353,7 @@ export default function StreamControl() {
                         />
                       </div>
                       <div>
-                        <InputLabel icon={FolderKanban}>Stream Key Collection (Optional)</InputLabel>
+                        <InputLabel icon={FolderKanban}>Stream Key Collection / Group</InputLabel>
                         <select
                           value={editingStream.collectionId || ''}
                           onChange={e => {
@@ -406,65 +418,107 @@ export default function StreamControl() {
                             <p className="text-red-500 text-xs font-medium italic">No key profiles found! Build one first in Global Settings.</p>
                           )}
                         </div>
-                        <p className="text-[10px] text-gray-500 mt-2">Selecting multiple keys will enable FFmpeg Tee Muxer for multi-streaming.</p>
+                        <p className="text-[10px] text-gray-500 mt-2">Selecting multiple keys will enable FFmpeg Tee Muxer for multi-streaming simultaneously.</p>
                       </div>
                     </div>
                   </div>
 
+                  {/* CPU Engine & Mode Selection */}
                   <div className="bg-[#111] p-6 rounded-2xl border border-gray-800">
-                    <h3 className="text-white font-semibold flex items-center mb-5 border-b border-gray-800 pb-2"><Activity className="w-4 h-4 mr-2 text-red-500" /> Processing Quality</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <InputLabel icon={Video}>Resolution</InputLabel>
-                        <select
-                          value={editingStream.resolution}
-                          onChange={e => setEditingStream({ ...editingStream, resolution: e.target.value })}
-                          className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none appearance-none"
-                        >
-                          <option value="144p">144p (Ultra Low)</option>
-                          <option value="240p">240p (Very Low)</option>
-                          <option value="360p">360p (Low Quality)</option>
-                          <option value="480p">480p (SD)</option>
-                          <option value="720p">720p (HD)</option>
-                          <option value="1080p">1080p (Full HD)</option>
-                          <option value="1440p">1440p (2K QHD)</option>
-                          <option value="2160p">2160p (4K UHD)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <InputLabel icon={Activity}>Framerate</InputLabel>
-                        <select
-                          value={editingStream.fps}
-                          onChange={e => setEditingStream({ ...editingStream, fps: e.target.value })}
-                          className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none appearance-none"
-                        >
-                          <option value="24">24 FPS</option>
-                          <option value="30">30 FPS</option>
-                          <option value="60">60 FPS</option>
-                          <option value="120">120 FPS</option>
-                        </select>
-                      </div>
-                      <div>
-                        <InputLabel icon={Settings}>Bitrate Output</InputLabel>
-                        <select
-                          value={editingStream.bitrate}
-                          onChange={e => setEditingStream({ ...editingStream, bitrate: e.target.value })}
-                          className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none appearance-none"
-                        >
-                          <option value="400k">400 kbps (Good for 144p)</option>
-                          <option value="700k">700 kbps (Good for 240p)</option>
-                          <option value="1000k">1000 kbps (Good for 360p)</option>
-                          <option value="1500k">1500 kbps (Good for 480p)</option>
-                          <option value="2500k">2500 kbps (Good for 720p)</option>
-                          <option value="4000k">4000 kbps (Standard 1080p)</option>
-                          <option value="6000k">6000 kbps (High 1080p60)</option>
-                          <option value="9000k">9000 kbps (Good for 1440p)</option>
-                          <option value="14000k">14000 kbps (Good for 4K)</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
+                    <h3 className="text-white font-semibold flex items-center mb-5 border-b border-gray-800 pb-2">
+                      <Cpu className="w-4 h-4 mr-2 text-red-500" /> CPU & Stream Engine
+                    </h3>
 
+                    {/* Mode Toggle Buttons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setEditingStream({ ...editingStream, cpuMode: 'ultralow' })}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          editingStream.cpuMode !== 'custom'
+                            ? 'bg-emerald-950/40 border-emerald-500/60 text-white shadow-sm'
+                            : 'bg-[#1a1a1a] border-gray-800 text-gray-400 hover:border-gray-700'
+                        }`}
+                      >
+                        <span className="text-xs font-bold block text-emerald-400">⚡ Ultra-Low Copy (0-1% CPU)</span>
+                        <span className="text-[10px] text-gray-400 block mt-0.5">
+                          Direct Stream Copy. Best for multiple keys & Collections without VPS CPU load.
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setEditingStream({ ...editingStream, cpuMode: 'custom' })}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          editingStream.cpuMode === 'custom'
+                            ? 'bg-red-950/40 border-red-500/60 text-white shadow-sm'
+                            : 'bg-[#1a1a1a] border-gray-800 text-gray-400 hover:border-gray-700'
+                        }`}
+                      >
+                        <span className="text-xs font-bold block text-red-400">⚙️ Custom Transcode</span>
+                        <span className="text-[10px] text-gray-400 block mt-0.5">
+                          Re-encode video with custom resolution, FPS & Bitrate limit.
+                        </span>
+                      </button>
+                    </div>
+
+                    {editingStream.cpuMode !== 'custom' ? (
+                      <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-300">
+                        ✅ <strong>Direct Stream Copy Active:</strong> Video will be streamed in native resolution & bitrate directly to all selected stream keys and collection destinations. Uses almost 0% VPS CPU!
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <InputLabel icon={Video}>Resolution</InputLabel>
+                          <select
+                            value={editingStream.resolution}
+                            onChange={e => setEditingStream({ ...editingStream, resolution: e.target.value })}
+                            className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none appearance-none"
+                          >
+                            <option value="144p">144p (Ultra Low)</option>
+                            <option value="240p">240p (Very Low)</option>
+                            <option value="360p">360p (Low Quality)</option>
+                            <option value="480p">480p (SD)</option>
+                            <option value="720p">720p (HD)</option>
+                            <option value="1080p">1080p (Full HD)</option>
+                            <option value="1440p">1440p (2K QHD)</option>
+                            <option value="2160p">2160p (4K UHD)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <InputLabel icon={Activity}>Framerate</InputLabel>
+                          <select
+                            value={editingStream.fps}
+                            onChange={e => setEditingStream({ ...editingStream, fps: e.target.value })}
+                            className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none appearance-none"
+                          >
+                            <option value="24">24 FPS</option>
+                            <option value="30">30 FPS</option>
+                            <option value="60">60 FPS</option>
+                            <option value="120">120 FPS</option>
+                          </select>
+                        </div>
+                        <div>
+                          <InputLabel icon={Settings}>Bitrate Output</InputLabel>
+                          <select
+                            value={editingStream.bitrate}
+                            onChange={e => setEditingStream({ ...editingStream, bitrate: e.target.value })}
+                            className="w-full bg-[#1a1a1a] text-white px-4 py-2.5 rounded-xl border border-gray-800 focus:border-red-500 outline-none appearance-none"
+                          >
+                            <option value="400k">400 kbps (Good for 144p)</option>
+                            <option value="700k">700 kbps (Good for 240p)</option>
+                            <option value="1000k">1000 kbps (Good for 360p)</option>
+                            <option value="1500k">1500 kbps (Good for 480p)</option>
+                            <option value="2500k">2500 kbps (Good for 720p)</option>
+                            <option value="4000k">4000 kbps (Standard 1080p)</option>
+                            <option value="6000k">6000 kbps (High 1080p60)</option>
+                            <option value="9000k">9000 kbps (Good for 1440p)</option>
+                            <option value="14000k">14000 kbps (Good for 4K)</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                 </div>
 

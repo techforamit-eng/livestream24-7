@@ -159,6 +159,7 @@ export function startStream(streamId: string) {
   }
 
   // 2. Prepare Variables
+  const isUltraLow = streamConfig.cpuMode !== 'custom';
   const bitrate = (streamConfig.bitrate || '4000k').toString().replace('k', '');
   const fps = streamConfig.fps || '30';
   const resLimit = RESOLUTION_MAP[streamConfig.resolution] || '1280:720';
@@ -175,14 +176,13 @@ export function startStream(streamId: string) {
     const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
     outputUrl = `${rtmpUrl}${streamKey}`;
   } else {
-    // Tee muxer syntax: [f=flv:onfail=ignore:use_fifo=1:fifo_format=flv]rtmp://...
     outputFormat = 'tee';
     outputUrl = profiles.map(p => {
       const streamKey = p!.streamKey.trim();
       const rawRtmpUrl = p!.youtubeRtmpUrl.trim();
       const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
       const fullUrl = `${rtmpUrl}${streamKey}`;
-      return `[f=fifo:fifo_format=flv:onfail=ignore:drop_pkts_on_overflow=1:attempt_recovery=1:recovery_wait_time=1:format_opts=flvflags\\=no_duration_filesize]${fullUrl}`;
+      return `[f=flv:onfail=ignore]${fullUrl}`;
     }).join('|');
   }
 
@@ -191,23 +191,39 @@ export function startStream(streamId: string) {
     '-loglevel', 'info',
     '-re',
     '-stream_loop', '-1',
-    '-fflags', '+genpts+igndts', // Move back to global
+    '-fflags', '+genpts+igndts',
     '-i', videoPath,
-    '-vf', `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,format=yuv420p`,
-    '-r', fps,
-    '-c:v', 'libx264',
-    '-preset', 'ultrafast',
-    '-tune', 'zerolatency',
-    '-b:v', `${bitrate}k`,
-    '-maxrate', `${bitrate}k`,
-    '-bufsize', `${parseInt(bitrate) * 2}k`,
-    '-pix_fmt', 'yuv420p',
-    '-g', (parseInt(fps) * 2).toString(),
-    '-c:a', 'aac',
-    '-b:a', '128k',
-    '-ar', '44100',
-    '-f', outputFormat,
   ];
+
+  if (isUltraLow) {
+    // Ultra-low CPU Direct Stream Copy (0-1% CPU)
+    args.push(
+      '-c:v', 'copy',
+      '-tag:v', '7',
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-ar', '44100'
+    );
+  } else {
+    // Custom Transcode Mode
+    args.push(
+      '-vf', `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,format=yuv420p`,
+      '-r', fps,
+      '-c:v', 'libx264',
+      '-preset', 'ultrafast',
+      '-tune', 'zerolatency',
+      '-b:v', `${bitrate}k`,
+      '-maxrate', `${bitrate}k`,
+      '-bufsize', `${parseInt(bitrate) * 2}k`,
+      '-pix_fmt', 'yuv420p',
+      '-g', (parseInt(fps) * 2).toString(),
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-ar', '44100'
+    );
+  }
+
+  args.push('-f', outputFormat);
 
   if (outputFormat === 'tee') {
     args.push('-map', '0:v', '-map', '0:a', '-flags', '+global_header');
@@ -286,9 +302,7 @@ export function startStream(streamId: string) {
       }
     });
 
-
-
-    addLog(streamId, 'Stream process initialized.');
+    addLog(streamId, `Stream process initialized (${isUltraLow ? 'Ultra-low CPU Copy Mode' : 'Custom Transcode Mode'}).`);
     return { success: true, message: 'Stream started successfully.' };
 
   } catch (err: any) {
@@ -352,6 +366,3 @@ export function getStreamStatus(userId?: string) {
 
   return statuses;
 }
-
-
-

@@ -24,6 +24,7 @@ export interface StreamInstance {
   name: string; // Custom name for the stream (e.g. "Main Channel")
   profileIds: string[]; // IDs referencing StreamKeyProfiles
   collectionId?: string; // Reference to a StreamKeyCollection
+  cpuMode?: 'ultralow' | 'custom'; // Ultra-low CPU direct copy vs custom re-encoding
   resolution: string; // '720p' | '1080p'
   bitrate: string; // '2500k', '4000k'
   fps: string; // '30', '60'
