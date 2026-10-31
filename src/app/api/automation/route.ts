@@ -150,6 +150,7 @@ export async function POST(req: Request) {
           resolution: task.resolution || t.resolution,
           bitrate: task.bitrate || t.bitrate,
           fps: task.fps || t.fps,
+          streamCount: Math.min(5, Math.max(1, Number(task.streamCount) || t.streamCount || 1)),
           mode: task.mode || t.mode,
           loopSettings: task.loopSettings ? {
             runDurationMins: Number(task.loopSettings.runDurationMins) || 5,
@@ -190,6 +191,7 @@ export async function POST(req: Request) {
       resolution: task.resolution || '1080p',
       bitrate: task.bitrate || '4000k',
       fps: task.fps || '60',
+      streamCount: Math.min(5, Math.max(1, Number(task.streamCount) || 1)),
       mode: task.mode || 'loop',
       loopSettings: task.loopSettings ? {
         runDurationMins: Number(task.loopSettings.runDurationMins) || 5,

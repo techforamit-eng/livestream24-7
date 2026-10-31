@@ -283,7 +283,8 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
 
     // Clean up any lingering previous broadcasts for this task to avoid YouTube duplicates
     if (task.activeBroadcasts) {
-      for (const [chId, bInfo] of Object.entries(task.activeBroadcasts)) {
+      for (const [broadcastKey, bInfo] of Object.entries(task.activeBroadcasts)) {
+        const chId = broadcastKey.split('_inst')[0];
         if (bInfo?.broadcastId) {
           try {
             await endOrCleanupBroadcast(chId, bInfo.broadcastId, bInfo.streamId);
@@ -317,7 +318,9 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       return { success: false, message: 'No target YouTube channels selected.' };
     }
 
-    addAutoLog(task.id, `Connecting to ${uniqueChannels.length} YouTube channel(s) via API...`);
+    const streamCount = Math.min(5, Math.max(1, Number(task.streamCount) || 1));
+    const totalExpectedBroadcasts = uniqueChannels.length * streamCount;
+    addAutoLog(task.id, `Connecting to ${uniqueChannels.length} YouTube channel(s) (Stream Count: ${streamCount}x per channel = ${totalExpectedBroadcasts} total)...`);
     const activeBroadcasts: Record<string, { broadcastId: string; streamId: string; streamKey: string; rtmpUrl: string }> = {};
     const endpoints: { url: string; key: string }[] = [];
 
@@ -334,8 +337,9 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       }
     }
 
-    // Create YouTube broadcast & stream for each unique channel
+    // Create YouTube broadcast & stream for each unique channel and instance
     for (const channelId of uniqueChannels) {
+      for (let instanceIdx = 1; instanceIdx <= streamCount; instanceIdx++) {
       try {
         const streamInfo = await createLiveBroadcastAndStream(channelId, {
           title: task.broadcastSettings?.title || task.name,
@@ -345,7 +349,8 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
           privacyStatus: task.broadcastSettings?.privacyStatus || 'public',
           categoryId: task.broadcastSettings?.categoryId || '10'
         });
-        activeBroadcasts[channelId] = streamInfo;
+        const broadcastKey = streamCount > 1 ? `${channelId}_inst${instanceIdx}` : channelId;
+        activeBroadcasts[broadcastKey] = streamInfo;
         endpoints.push({ url: streamInfo.rtmpUrl, key: streamInfo.streamKey });
 
         let thumbLog = '';
@@ -357,11 +362,13 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
           }
         }
 
-        addAutoLog(task.id, `Created YouTube broadcast for channel ${channelId} (ID: ${streamInfo.broadcastId})${thumbLog}`);
+        const instanceLabel = streamCount > 1 ? ` [Stream #${instanceIdx}/${streamCount}]` : '';
+        addAutoLog(task.id, `Created YouTube broadcast for channel ${channelId}${instanceLabel} (ID: ${streamInfo.broadcastId})${thumbLog}`);
       } catch (err: any) {
         addAutoLog(task.id, `Failed to create broadcast on channel ${channelId}: ${err.message}`);
       }
     }
+  }
 
     if (endpoints.length === 0) {
       addAutoLog(task.id, `Error: Could not create broadcasts on any channel.`);
@@ -615,7 +622,8 @@ export async function stopAutoStreamTask(taskId: string, reason: string = 'Sessi
     const task = (config.autoTasks || []).find(t => t.id === taskId);
     const broadcasts = active?.activeBroadcasts || task?.activeBroadcasts || {};
 
-    for (const [channelId, info] of Object.entries(broadcasts)) {
+    for (const [broadcastKey, info] of Object.entries(broadcasts)) {
+      const channelId = broadcastKey.split('_inst')[0];
       if (info && info.broadcastId) {
         try {
           const res = await endOrCleanupBroadcast(channelId, info.broadcastId, info.streamId);

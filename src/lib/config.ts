@@ -63,6 +63,7 @@ export interface AutoStreamTask {
   resolution: string; // '720p', '1080p', etc.
   bitrate: string; // '2500k', '4000k', etc.
   fps: string; // '30', '60'
+  streamCount?: number; // Number of concurrent streams per channel (default: 1)
   mode: 'loop' | 'scheduled'; // Loop vs Scheduled Clock Time
   loopSettings: {
     runDurationMins: number; // e.g. 60 mins

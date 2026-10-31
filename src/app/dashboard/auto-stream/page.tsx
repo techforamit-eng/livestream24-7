@@ -306,6 +306,7 @@ export default function AutoStreamPage() {
       resolution: '1080p',
       bitrate: '4000k',
       fps: '60',
+      streamCount: 1,
       mode: 'loop',
       loopSettings: { runDurationMins: 5, cooldownMins: 2 },
       scheduleSettings: {
@@ -335,6 +336,7 @@ export default function AutoStreamPage() {
     setTagsInputText((task.broadcastSettings?.tags || []).join(', '));
     setEditingTask({
       ...task,
+      streamCount: task.streamCount || 1,
       scheduleSettings: {
         startTime: task.scheduleSettings?.startTime || '18:00',
         durationMins: task.scheduleSettings?.durationMins || 60,
@@ -674,6 +676,12 @@ export default function AutoStreamPage() {
                         <Box className="w-3 h-3 text-purple-400" />
                         <span>CONTAINER #{task.id.slice(0, 8).toUpperCase()}</span>
                       </span>
+                      {(task.streamCount || 1) > 1 && (
+                        <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center space-x-1">
+                          <Zap className="w-2.5 h-2.5 text-amber-400" />
+                          <span>{task.streamCount}x STREAMS</span>
+                        </span>
+                      )}
                       {userRole === 'admin' && (
                         <span className="px-2 py-0.5 rounded font-mono text-[10px] bg-blue-950/80 text-blue-300 border border-blue-500/40">
                           User: {task.userId || 'admin'}
@@ -1256,6 +1264,41 @@ export default function AutoStreamPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                                {/* Concurrent Stream Count per Channel */}
+                <div className="p-4 bg-[#111] rounded-xl border border-gray-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-gray-300 uppercase flex items-center space-x-1.5">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Concurrent Stream Count (Per Channel)</span>
+                    </label>
+                    <span className="text-[10px] text-amber-300 font-bold px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 font-mono">
+                      {editingTask.streamCount || 1}x Live Stream{(editingTask.streamCount || 1) > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                    Har chune huye YouTube channel par kitne live streams ek sath chalana chahte hain? (e.g. Agar <b>3</b> select karenge, to same video, same title aur tags ke sath ek hi samay me <b>3 alag-alag live streams</b> YouTube par live chalenge).
+                  </p>
+                  <div className="grid grid-cols-5 gap-2 pt-1">
+                    {[1, 2, 3, 4, 5].map((cnt) => {
+                      const isSelected = (editingTask.streamCount || 1) === cnt;
+                      return (
+                        <button
+                          key={cnt}
+                          type="button"
+                          onClick={() => setEditingTask({ ...editingTask, streamCount: cnt })}
+                          className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center space-y-0.5 ${isSelected
+                            ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-lg shadow-amber-950/40 ring-1 ring-amber-500/50'
+                            : 'bg-[#181818] border-gray-800 text-gray-400 hover:border-gray-700 hover:text-white'
+                            }`}
+                        >
+                          <span className="text-sm font-extrabold">{cnt}x</span>
+                          <span className="text-[9px] font-normal opacity-75">{cnt === 1 ? 'Single' : 'Streams'}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* YouTube Broadcast Metadata Section */}
