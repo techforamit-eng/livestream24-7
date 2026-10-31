@@ -779,7 +779,15 @@ export default function AutoStreamPage() {
                       </div>
                     </div>
 
-                    <div className="text-right">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center -space-x-1.5">
+                        {(task.channelIds || []).slice(0, 3).map(cId => {
+                          const ch = channels.find(c => c.id === cId);
+                          return ch?.thumbnail ? (
+                            <img key={cId} src={ch.thumbnail} alt={ch.title} title={ch.title} className="w-5 h-5 rounded-full border border-gray-700 object-cover shrink-0" onError={(e: any) => { e.target.style.display = 'none'; }} />
+                          ) : null;
+                        })}
+                      </div>
                       <span className="text-xs font-bold text-gray-300">
                         {task.channelIds?.length || 0} Channel(s)
                       </span>
@@ -912,9 +920,9 @@ export default function AutoStreamPage() {
                         return (
                           <label
                             key={ch.id}
-                            className={`flex items-center space-x-3 p-2 rounded-lg border cursor-pointer transition-all ${isChecked
-                              ? 'bg-red-500/10 border-red-500/40 text-white'
-                              : 'border-gray-800 text-gray-400 hover:border-gray-700'
+                            className={`flex items-center space-x-2.5 p-2 rounded-xl border cursor-pointer transition-all ${isChecked
+                              ? 'bg-red-500/10 border-red-500/50 text-white shadow-sm'
+                              : 'bg-[#141414] border-gray-800 text-gray-400 hover:border-gray-700'
                               }`}
                           >
                             <input
@@ -928,9 +936,21 @@ export default function AutoStreamPage() {
                                   setEditingTask({ ...editingTask, channelIds: current.filter(id => id !== ch.id) });
                                 }
                               }}
-                              className="accent-red-500 w-4 h-4 rounded"
+                              className="accent-red-500 w-4 h-4 rounded shrink-0"
                             />
-                            <span className="text-xs font-medium truncate">{ch.title}</span>
+                            {ch.thumbnail ? (
+                              <img
+                                src={ch.thumbnail}
+                                alt={ch.title}
+                                className="w-6 h-6 rounded-full object-cover border border-gray-700 shrink-0"
+                                onError={(e: any) => { e.target.style.display = 'none'; }}
+                              />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-red-600/20 text-red-400 flex items-center justify-center font-bold text-[10px] shrink-0 border border-red-500/30">
+                                {ch.title.charAt(0)}
+                              </div>
+                            )}
+                            <span className="text-xs font-medium truncate flex-1" title={ch.title}>{ch.title}</span>
                           </label>
                         );
                       })}

@@ -195,7 +195,7 @@ export function getConfig(): AppConfig {
       fs.writeFileSync(DATA_FILE, JSON.stringify(migrated, null, 2));
       return migrated;
     }
-    
+
     if (parsed.streams) {
       parsed.streams = parsed.streams.map((s: any) => {
         if (s.profileId && !s.profileIds) {
@@ -209,10 +209,10 @@ export function getConfig(): AppConfig {
 
     // Ensure streamKeys exists
     if (!parsed.streamKeys) parsed.streamKeys = [];
-    
+
     // Ensure collections exists
     if (!parsed.collections) parsed.collections = [];
-    
+
     // Ensure users array exists
     if (!parsed.users || parsed.users.length === 0) {
       parsed.users = [
