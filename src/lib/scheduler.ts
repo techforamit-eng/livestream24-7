@@ -406,7 +406,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       outputUrl = endpoints.map(ep => {
         const rtmpBase = ep.url.endsWith('/') ? ep.url : ep.url + '/';
         const full = `${rtmpBase}${ep.key.trim()}`;
-        return `[f=flv:onfail=ignore]${full}`;
+        return `[f=flv:flvflags=no_duration_filesize:onfail=ignore]${full}`;
       }).join('|');
     }
 
@@ -415,6 +415,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       '-re',
       '-stream_loop', '-1',
       '-fflags', '+genpts+igndts',
+      '-avoid_negative_ts', 'make_zero',
       '-i', normalizedVideo,
     ];
 
@@ -428,7 +429,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
         '-ar', '44100'
       );
     } else {
-      // Transcode / custom quality with low-CPU profile
+      // Transcode / custom quality with low-CPU profile, strict 2s keyframes & CBR
       const bitrate = (task.bitrate || '4000k').replace('k', '');
       const fps = task.fps || '30';
       const resMap: Record<string, string> = {
@@ -448,10 +449,13 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
         '-tune', 'zerolatency',
         '-threads', '2',
         '-b:v', `${bitrate}k`,
+        '-minrate', `${bitrate}k`,
         '-maxrate', `${bitrate}k`,
         '-bufsize', `${parseInt(bitrate) * 2}k`,
         '-pix_fmt', 'yuv420p',
         '-g', (parseInt(fps) * 2).toString(),
+        '-keyint_min', (parseInt(fps) * 2).toString(),
+        '-sc_threshold', '0',
         '-c:a', 'aac',
         '-b:a', '128k',
         '-ar', '44100'
@@ -460,6 +464,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
 
     // Hard duration limit flag: FFmpeg automatically closes after exact duration!
     args.push('-t', durationSeconds.toString());
+    args.push('-max_muxing_queue_size', '4096');
 
     if (outputFormat === 'tee') {
       args.push('-f', 'tee', '-map', '0:v?', '-map', '0:a?', '-flags', '+global_header');

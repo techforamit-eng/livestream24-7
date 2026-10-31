@@ -182,7 +182,7 @@ export function startStream(streamId: string) {
       const rawRtmpUrl = p!.youtubeRtmpUrl.trim();
       const rtmpUrl = rawRtmpUrl.endsWith('/') ? rawRtmpUrl : rawRtmpUrl + '/';
       const fullUrl = `${rtmpUrl}${streamKey}`;
-      return `[f=flv:onfail=ignore]${fullUrl}`;
+      return `[f=flv:flvflags=no_duration_filesize:onfail=ignore]${fullUrl}`;
     }).join('|');
   }
 
@@ -192,6 +192,7 @@ export function startStream(streamId: string) {
     '-re',
     '-stream_loop', '-1',
     '-fflags', '+genpts+igndts',
+    '-avoid_negative_ts', 'make_zero',
     '-i', videoPath,
   ];
 
@@ -205,7 +206,7 @@ export function startStream(streamId: string) {
       '-ar', '44100'
     );
   } else {
-    // Custom Transcode Mode
+    // Custom Transcode Mode with strict 2-second keyframes and CBR
     args.push(
       '-vf', `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,format=yuv420p`,
       '-r', fps,
@@ -213,16 +214,20 @@ export function startStream(streamId: string) {
       '-preset', 'ultrafast',
       '-tune', 'zerolatency',
       '-b:v', `${bitrate}k`,
+      '-minrate', `${bitrate}k`,
       '-maxrate', `${bitrate}k`,
       '-bufsize', `${parseInt(bitrate) * 2}k`,
       '-pix_fmt', 'yuv420p',
       '-g', (parseInt(fps) * 2).toString(),
+      '-keyint_min', (parseInt(fps) * 2).toString(),
+      '-sc_threshold', '0',
       '-c:a', 'aac',
       '-b:a', '128k',
       '-ar', '44100'
     );
   }
 
+  args.push('-max_muxing_queue_size', '4096');
   args.push('-f', outputFormat);
 
   if (outputFormat === 'tee') {
