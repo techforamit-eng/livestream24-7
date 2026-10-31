@@ -20,7 +20,7 @@ export default function AutoStreamPage() {
   const [tasks, setTasks] = useState<AutoStreamTask[]>([]);
   const [statuses, setStatuses] = useState<Record<string, any>>({});
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
-  const [videos, setVideos] = useState<{ name: string }[]>([]);
+  const [videos, setVideos] = useState<{ name: string; owner?: string }[]>([]);
   const [userRole, setUserRole] = useState<string>('admin');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -970,7 +970,9 @@ export default function AutoStreamPage() {
                   >
                     <option value="" disabled>Select video...</option>
                     {videos.map((v) => (
-                      <option key={v.name} value={v.name}>{v.name}</option>
+                      <option key={`${v.owner || ''}-${v.name}`} value={v.name}>
+                        {userRole === 'admin' && v.owner ? `[${v.owner}] ${v.name}` : v.name}
+                      </option>
                     ))}
                   </select>
                   <p className="text-[11px] text-emerald-400 mt-1.5 flex items-center space-x-1">

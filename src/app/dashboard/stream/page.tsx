@@ -12,10 +12,10 @@ export default function StreamControl() {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Record<string, string>>({});
 
-  const [videos, setVideos] = useState<{ name: string }[]>([]);
+  const [videos, setVideos] = useState<{ name: string; owner?: string; size?: string }[]>([]);
   const [editingStream, setEditingStream] = useState<StreamInstance | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [playingVideo, setPlayingVideo] = useState<string | null>(null);
+  const [playingVideo, setPlayingVideo] = useState<{ name: string; owner?: string } | null>(null);
 
   const fetchStatus = async () => {
     try {
@@ -541,7 +541,7 @@ export default function StreamControl() {
                         videos.map(vid => {
                           const isSelected = editingStream.video === vid.name;
                           return (
-                            <label key={vid.name} className={`flex items-center space-x-3 p-3 rounded-xl border cursor-pointer transition-colors ${isSelected ? 'bg-red-500/10 border-red-500/50' : 'bg-[#1a1a1a] border-gray-800 hover:bg-gray-900'} `}>
+                            <label key={`${vid.owner || ''}-${vid.name}`} className={`flex items-center space-x-3 p-3 rounded-xl border cursor-pointer transition-colors ${isSelected ? 'bg-red-500/10 border-red-500/50' : 'bg-[#1a1a1a] border-gray-800 hover:bg-gray-900'} `}>
                               <input
                                 type="radio"
                                 name="sourceVideo"
@@ -552,13 +552,18 @@ export default function StreamControl() {
                               <div className="flex items-center space-x-2 overflow-hidden flex-1">
                                 <Video className={`w-4 h-4 shrink-0 ${isSelected ? 'text-red-500' : 'text-gray-600'}`} />
                                 <span className={`text-sm font-medium truncate ${isSelected ? 'text-white' : 'text-gray-400'}`}>{vid.name}</span>
+                                {userRole === 'admin' && vid.owner && (
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-950/80 text-blue-300 border border-blue-500/30 font-mono shrink-0">
+                                    {vid.owner}
+                                  </span>
+                                )}
                               </div>
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
-                                  setPlayingVideo(vid.name);
+                                  setPlayingVideo({ name: vid.name, owner: vid.owner });
                                 }}
                                 className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all shrink-0"
                                 title="Preview Video"
@@ -607,7 +612,7 @@ export default function StreamControl() {
                   <div className="p-2 bg-red-500/10 rounded-lg text-red-500">
                     <Video className="w-5 h-5" />
                   </div>
-                  <span className="text-white font-medium truncate">{playingVideo}</span>
+                  <span className="text-white font-medium truncate">{playingVideo.name}</span>
                 </div>
                 <button
                   onClick={() => setPlayingVideo(null)}
@@ -620,7 +625,7 @@ export default function StreamControl() {
               {/* Video Tag */}
               <div className="aspect-video bg-black flex items-center justify-center">
                 <video
-                  src={`/videos/${userRole}/${playingVideo}`}
+                  src={`/videos/${playingVideo.owner || userRole}/${playingVideo.name}`}
                   controls
                   autoPlay
                   className="w-full h-full max-h-[70vh]"
@@ -631,7 +636,7 @@ export default function StreamControl() {
 
               {/* Footer info */}
               <div className="p-4 bg-[#161616] text-center text-xs text-gray-500 border-t border-gray-800">
-                Previewing from VPS: public/videos/{playingVideo}
+                Previewing from VPS: public/videos/{playingVideo.owner ? playingVideo.owner + '/' : ''}{playingVideo.name}
               </div>
             </motion.div>
           </div>

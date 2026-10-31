@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { spawn } from 'child_process';
 import { getFFmpegPath } from '@/lib/ffmpegPath';
+import { findVideoPathOnDisk } from '@/lib/videoHelper';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'vmagic_secure_secret_key_123';
 
@@ -93,12 +94,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Output file name must be different from input file name.' }, { status: 400 });
     }
 
-    const inputPath = path.join(VIDEOS_DIR, safeInput);
-    const outputPath = path.join(VIDEOS_DIR, safeOutput);
-
-    if (!fs.existsSync(inputPath)) {
+    const resolved = findVideoPathOnDisk(safeInput, role);
+    if (!resolved) {
       return NextResponse.json({ success: false, message: `Input file "${safeInput}" not found on server.` }, { status: 404 });
     }
+    const inputPath = resolved.fullPath;
+    const outputPath = path.join(VIDEOS_DIR, safeOutput);
 
     if (fs.existsSync(outputPath)) {
       return NextResponse.json({ success: false, message: `Output file "${safeOutput}" already exists. Please choose a different name.` }, { status: 409 });
@@ -263,3 +264,4 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
+

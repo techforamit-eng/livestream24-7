@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import pidusage from 'pidusage';
 import { getFFmpegPath } from './ffmpegPath';
+import { findVideoPathOnDisk } from './videoHelper';
 
 const VIDEOS_DIR = path.join(process.cwd(), 'public', 'videos');
 const PLAYLISTS_DIR = path.join(process.cwd(), 'public', 'playlists');
@@ -149,14 +150,12 @@ export function startStream(streamId: string) {
     return { success: false, message: 'No video selected. Please select a video first.' };
   }
 
-  // 1. Prepare Video Path
-  const role = streamConfig.userId || 'admin';
-  const videoFile = streamConfig.video.replace(/'/g, "'\\''");
-  const videoPath = path.join(VIDEOS_DIR, role, videoFile).replace(/\\/g, '/');
-
-  if (!fs.existsSync(path.join(VIDEOS_DIR, role, streamConfig.video))) {
-    return { success: false, message: 'Video file not found on disk.' };
+  // 1. Prepare Video Path with cross-user directory resolution
+  const resolved = findVideoPathOnDisk(streamConfig.video, streamConfig.userId);
+  if (!resolved) {
+    return { success: false, message: `Video file "${streamConfig.video}" not found on disk.` };
   }
+  const videoPath = resolved.fullPath.replace(/\\/g, '/');
 
   // 2. Prepare Variables
   const isUltraLow = streamConfig.cpuMode !== 'custom';

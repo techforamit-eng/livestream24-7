@@ -4,6 +4,7 @@ import fs from 'fs';
 import { getConfig, saveConfig, AutoStreamTask } from './config';
 import { createLiveBroadcastAndStream, transitionBroadcast, endOrCleanupBroadcast } from './youtube';
 import { getFFmpegPath } from './ffmpegPath';
+import { findVideoPathOnDisk } from './videoHelper';
 
 const VIDEOS_DIR = path.join(process.cwd(), 'public', 'videos');
 const AUTO_PIDS_FILE = path.join(process.cwd(), 'active_auto_pids.json');
@@ -293,10 +294,10 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       }
     }
 
-    // 1. Check video
+    // 1. Check video with cross-user directory resolution
     const role = task.userId || 'admin';
-    const videoPath = path.join(VIDEOS_DIR, role, task.video);
-    if (!fs.existsSync(videoPath)) {
+    const resolved = findVideoPathOnDisk(task.video, role);
+    if (!resolved) {
       addAutoLog(task.id, `Error: Video file "${task.video}" not found on disk.`);
       const resetTasks = (getConfig().autoTasks || []).map(t => {
         if (t.id === task.id) return { ...t, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
@@ -305,6 +306,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       saveConfig({ autoTasks: resetTasks });
       return { success: false, message: `Video file "${task.video}" not found on disk.` };
     }
+    const videoPath = resolved.fullPath.replace(/\\/g, '/');
 
     // 2. Check target channels (Deduplicated)
     const uniqueChannels = Array.from(new Set(task.channelIds || []));
@@ -340,35 +342,35 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     // Create YouTube broadcast & stream for each unique channel and instance
     for (const channelId of uniqueChannels) {
       for (let instanceIdx = 1; instanceIdx <= streamCount; instanceIdx++) {
-      try {
-        const streamInfo = await createLiveBroadcastAndStream(channelId, {
-          title: task.broadcastSettings?.title || task.name,
-          description: task.broadcastSettings?.description || 'Automated 24/7 stream',
-          tags: task.broadcastSettings?.tags || [],
-          thumbnailPath,
-          privacyStatus: task.broadcastSettings?.privacyStatus || 'public',
-          categoryId: task.broadcastSettings?.categoryId || '10'
-        });
-        const broadcastKey = streamCount > 1 ? `${channelId}_inst${instanceIdx}` : channelId;
-        activeBroadcasts[broadcastKey] = streamInfo;
-        endpoints.push({ url: streamInfo.rtmpUrl, key: streamInfo.streamKey });
+        try {
+          const streamInfo = await createLiveBroadcastAndStream(channelId, {
+            title: task.broadcastSettings?.title || task.name,
+            description: task.broadcastSettings?.description || 'Automated 24/7 stream',
+            tags: task.broadcastSettings?.tags || [],
+            thumbnailPath,
+            privacyStatus: task.broadcastSettings?.privacyStatus || 'public',
+            categoryId: task.broadcastSettings?.categoryId || '10'
+          });
+          const broadcastKey = streamCount > 1 ? `${channelId}_inst${instanceIdx}` : channelId;
+          activeBroadcasts[broadcastKey] = streamInfo;
+          endpoints.push({ url: streamInfo.rtmpUrl, key: streamInfo.streamKey });
 
-        let thumbLog = '';
-        if (thumbnailPath) {
-          if (streamInfo.thumbnailUploaded) {
-            thumbLog = ' | Custom Thumbnail: Applied ✅';
-          } else {
-            thumbLog = ` | Custom Thumbnail: ⚠️ Failed (${streamInfo.thumbnailError || 'Check phone verification for custom thumbnails'})`;
+          let thumbLog = '';
+          if (thumbnailPath) {
+            if (streamInfo.thumbnailUploaded) {
+              thumbLog = ' | Custom Thumbnail: Applied ✅';
+            } else {
+              thumbLog = ` | Custom Thumbnail: ⚠️ Failed (${streamInfo.thumbnailError || 'Check phone verification for custom thumbnails'})`;
+            }
           }
-        }
 
-        const instanceLabel = streamCount > 1 ? ` [Stream #${instanceIdx}/${streamCount}]` : '';
-        addAutoLog(task.id, `Created YouTube broadcast for channel ${channelId}${instanceLabel} (ID: ${streamInfo.broadcastId})${thumbLog}`);
-      } catch (err: any) {
-        addAutoLog(task.id, `Failed to create broadcast on channel ${channelId}: ${err.message}`);
+          const instanceLabel = streamCount > 1 ? ` [Stream #${instanceIdx}/${streamCount}]` : '';
+          addAutoLog(task.id, `Created YouTube broadcast for channel ${channelId}${instanceLabel} (ID: ${streamInfo.broadcastId})${thumbLog}`);
+        } catch (err: any) {
+          addAutoLog(task.id, `Failed to create broadcast on channel ${channelId}: ${err.message}`);
+        }
       }
     }
-  }
 
     if (endpoints.length === 0) {
       addAutoLog(task.id, `Error: Could not create broadcasts on any channel.`);
