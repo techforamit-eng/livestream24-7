@@ -112,7 +112,7 @@ export default function ManageStreamsPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-white flex items-center">
+          <h2 className="text-xl sm:text-2xl font-semibold text-white flex items-center">
             <Radio className="w-6 h-6 mr-3 text-red-500" />
             Global Stream Manager
           </h2>
@@ -185,7 +185,7 @@ export default function ManageStreamsPage() {
                   className="bg-[#161616] border border-gray-800 rounded-2xl overflow-hidden shadow-xl"
                 >
                   {/* Header */}
-                  <div className="flex items-center justify-between px-6 py-4 bg-[#111] border-b border-gray-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 bg-[#111] border-b border-gray-800">
                     <div className="flex items-center space-x-4">
                       {/* Status dot */}
                       <div className={`w-3 h-3 rounded-full shadow-[0_0_8px_currentColor] ${isRunning ? 'bg-green-500 text-green-500 animate-pulse' :
@@ -213,7 +213,7 @@ export default function ManageStreamsPage() {
                     </div>
 
                     {/* Controls */}
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 self-end sm:self-auto shrink-0">
                       <button
                         onClick={() => handleAction(stream.id, 'start')}
                         disabled={isLoading || isRunning || !stream.video || stream.video === 'None'}
@@ -262,7 +262,7 @@ export default function ManageStreamsPage() {
 
                   {/* Message / playlist warning */}
                   <div className="px-6 py-2.5 flex items-center justify-between min-h-[44px]">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 self-end sm:self-auto shrink-0">
                       {!stream.video || stream.video === 'None' ? (
                         <span className="text-xs text-red-500 font-semibold">⚠ No video selected</span>
                       ) : (

@@ -16,7 +16,6 @@ interface SysStats {
   currentUserId: string;
 }
 
-
 export default function DashboardOverview() {
   const [stats, setStats] = useState<SysStats | null>(null);
 
@@ -40,8 +39,8 @@ export default function DashboardOverview() {
 
   if (!stats) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Activity className="w-12 h-12 text-red-500 animate-spin" />
+      <div className="flex items-center justify-center h-full min-h-[300px]">
+        <Activity className="w-10 sm:w-12 h-10 sm:h-12 text-red-500 animate-spin" />
       </div>
     );
   }
@@ -96,27 +95,29 @@ export default function DashboardOverview() {
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <h2 className="text-2xl font-semibold text-white">System Overview</h2>
+    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl sm:text-2xl font-semibold text-white">System Overview</h2>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {cards.map((item, idx) => (
           <motion.div
             key={item.title}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="p-6 bg-[#161616] border border-gray-800 rounded-2xl flex items-center shadow-lg"
+            className="p-4 sm:p-6 bg-[#161616] border border-gray-800 rounded-2xl flex items-center shadow-lg"
           >
-            <div className={`p-4 rounded-xl ${item.bg} mr-6`}>
-              <item.icon className={`w-8 h-8 ${item.color}`} />
+            <div className={`p-3 sm:p-4 rounded-xl ${item.bg} mr-4 sm:mr-6 shrink-0`}>
+              <item.icon className={`w-6 sm:w-8 h-6 sm:h-8 ${item.color}`} />
             </div>
-            <div>
-              <p className="text-gray-400 text-sm font-medium mb-1">{item.title}</p>
-              <h3 className={`text-2xl font-bold ${item.title === 'Active Streams' ? item.color : 'text-white'}`}>
+            <div className="min-w-0">
+              <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1 truncate">{item.title}</p>
+              <h3 className={`text-xl sm:text-2xl font-bold truncate ${item.title === 'Active Streams' ? item.color : 'text-white'}`}>
                 {item.value}
               </h3>
-              <p className="text-gray-500 text-xs mt-1 capitalize">{item.sub}</p>
+              <p className="text-gray-500 text-xs mt-1 capitalize truncate">{item.sub}</p>
             </div>
           </motion.div>
         ))}

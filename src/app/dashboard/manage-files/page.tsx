@@ -111,7 +111,7 @@ export default function ManageFilesPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-white flex items-center">
+          <h2 className="text-xl sm:text-2xl font-semibold text-white flex items-center">
             <FolderKanban className="w-6 h-6 mr-3 text-red-500" />
             Global File Manager
           </h2>
@@ -136,7 +136,7 @@ export default function ManageFilesPage() {
       </div>
 
       {/* User Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {users.map(u => {
           const userFiles = files.filter(f => f.userId === u.id);
           const userBytes = userFiles.reduce((a, f) => a + f.bytes, 0);
@@ -195,8 +195,8 @@ export default function ManageFilesPage() {
           <p>No files found.</p>
         </div>
       ) : (
-        <div className="bg-[#161616] border border-gray-800 rounded-3xl overflow-hidden">
-          <div className="grid grid-cols-[1fr_auto_auto_auto] text-xs font-semibold text-gray-500 uppercase tracking-widest px-6 py-3 border-b border-gray-800 bg-[#111]">
+        <div className="bg-[#161616] border border-gray-800 rounded-2xl sm:rounded-3xl overflow-x-auto">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] min-w-[580px] text-xs font-semibold text-gray-500 uppercase tracking-widest px-6 py-3 border-b border-gray-800 bg-[#111]">
             <span>File Name</span>
             <span className="text-right pr-6">Owner</span>
             <span className="text-right pr-6">Size</span>
@@ -211,7 +211,7 @@ export default function ManageFilesPage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
                   transition={{ delay: i * 0.02 }}
-                  className="grid grid-cols-[1fr_auto_auto_auto] items-center px-6 py-4 hover:bg-gray-900/40 transition-colors group"
+                  className="grid grid-cols-[1fr_auto_auto_auto] min-w-[580px] items-center px-6 py-4 hover:bg-gray-900/40 transition-colors group"
                 >
                   <div className="flex items-center space-x-3 overflow-hidden">
                     <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center shrink-0">
@@ -230,7 +230,7 @@ export default function ManageFilesPage() {
                   <div>
                     <button
                       onClick={() => startMove(file)}
-                      className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#1a1a1a] border border-gray-700 hover:border-red-500/50 hover:bg-red-500/10 text-gray-400 hover:text-red-400 rounded-lg transition-all text-xs font-semibold opacity-0 group-hover:opacity-100"
+                      className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#1a1a1a] border border-gray-700 hover:border-red-500/50 hover:bg-red-500/10 text-gray-400 hover:text-red-400 rounded-lg transition-all text-xs font-semibold opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                       title="Reassign to another user"
                     >
                       <ArrowRightLeft className="w-3.5 h-3.5" />

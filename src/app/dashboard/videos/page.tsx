@@ -207,12 +207,12 @@ export default function FilesDB() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-white">Files Database</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-white">Files Database</h2>
           <p className="text-gray-500 text-sm mt-1">All uploaded videos stored on the VPS. Use Stream Control to assign videos to playlists.</p>
         </div>
-        <div className="flex items-center space-x-3 bg-[#161616] border border-gray-800 rounded-xl px-4 py-2">
+        <div className="flex items-center space-x-3 bg-[#161616] border border-gray-800 rounded-xl px-4 py-2 self-start sm:self-auto shrink-0">
           <HardDrive className="w-5 h-5 text-red-500" />
           <span className="text-white font-semibold">{videos.length}</span>
           <span className="text-gray-500 text-sm">videos stored</span>
@@ -220,7 +220,7 @@ export default function FilesDB() {
       </div>
 
       {/* Upload Zone */}
-      <div className="bg-[#161616] border border-gray-800 rounded-3xl p-6 shadow-xl">
+      <div className="bg-[#161616] border border-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl">
         <label className={`flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-2xl cursor-pointer transition-all group ${uploading ? 'border-red-500/60 bg-red-500/5' : 'border-gray-800 bg-[#111] hover:bg-gray-800/40 hover:border-red-500/50'}`}>
           <div className="flex flex-col items-center justify-center py-4">
             <Upload className={`w-10 h-10 mb-3 transition-all ${uploading ? 'text-red-500 animate-bounce' : 'text-gray-600 group-hover:text-red-500 group-hover:scale-110'}`} />
@@ -276,8 +276,8 @@ export default function FilesDB() {
       </div>
 
       {/* Search + Grid of Videos */}
-      <div className="bg-[#161616] border border-gray-800 rounded-3xl p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-5">
+      <div className="bg-[#161616] border border-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <h3 className="text-lg font-semibold text-white flex items-center">
             <Film className="w-5 h-5 mr-2 text-red-500" /> All Videos
           </h3>
@@ -288,7 +288,7 @@ export default function FilesDB() {
               placeholder="Search files..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="bg-[#111] border border-gray-800 text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:border-red-500 focus:outline-none w-48"
+              className="bg-[#111] border border-gray-800 text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:border-red-500 focus:outline-none w-full sm:w-56"
             />
           </div>
         </div>
@@ -355,7 +355,7 @@ export default function FilesDB() {
                     </div>
                   </div>
                   {renamingFile !== vid.name && (
-                    <div className="flex items-center space-x-1 shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="flex items-center space-x-1 shrink-0 ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
                       <button
                         onClick={() => setPlayingVideo(vid.name)}
                         className="p-2 text-gray-500 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-all"

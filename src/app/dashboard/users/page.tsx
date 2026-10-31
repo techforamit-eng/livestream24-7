@@ -178,9 +178,9 @@ export default function UserManagePage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-white">User Management</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-white">User Management</h2>
           <p className="text-gray-500 text-sm mt-1">Manage platform access, reset passwords, and assign dedicated workspaces.</p>
         </div>
         <button
@@ -195,7 +195,7 @@ export default function UserManagePage() {
       {loading ? (
         <div className="text-gray-400 p-8">Loading users...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <AnimatePresence>
             {users.map((u, i) => (
               <motion.div
@@ -204,7 +204,7 @@ export default function UserManagePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ delay: i * 0.05 }}
-                className="bg-[#161616] border border-gray-800 rounded-2xl p-6 shadow-xl relative overflow-hidden group"
+                className="bg-[#161616] border border-gray-800 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden group"
               >
                 {/* Visual indicators */}
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-red-900 opacity-50" />

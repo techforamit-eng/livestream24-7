@@ -54,18 +54,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900/20 via-black to-black">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-[#0a0a0a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900/20 via-black to-black">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-md p-8 bg-[#111] rounded-2xl shadow-2xl border border-gray-800"
+        className="w-full max-w-md p-6 sm:p-8 bg-[#111] rounded-2xl shadow-2xl border border-gray-800"
       >
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20">
             <Radio className="w-8 h-8 text-red-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-widest text-center">
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-widest text-center">
             V MAGIC <span className="text-red-500">LIVE</span>
           </h1>
           <p className="text-gray-400 text-sm mt-2">Control Panel Login</p>
@@ -80,7 +80,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter Password"
-                className="w-full bg-[#1a1a1a] text-white pl-11 pr-12 py-3 rounded-xl border border-gray-800 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all placeholder:text-gray-600"
+                className="w-full bg-[#1a1a1a] text-white pl-11 pr-12 py-3 rounded-xl border border-gray-800 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all placeholder:text-gray-600 text-sm"
               />
               <button
                 type="button"
@@ -119,7 +119,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || !password}
-            className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:hover:bg-red-600 text-white font-semibold py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)] hover:shadow-[0_0_30px_rgba(220,38,38,0.5)]"
+            className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:hover:bg-red-600 text-white font-semibold py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)] hover:shadow-[0_0_30px_rgba(220,38,38,0.5)] text-sm"
           >
             {loading ? 'Authenticating...' : 'Secure Login'}
           </button>

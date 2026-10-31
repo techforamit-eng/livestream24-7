@@ -112,14 +112,14 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-800">
-        <h2 className="text-2xl font-semibold text-white">Application Global Settings</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8 pb-4 border-b border-gray-800">
+        <h2 className="text-xl sm:text-2xl font-semibold text-white">Application Global Settings</h2>
         <p className="text-xs text-gray-500 bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-lg font-medium">Stream specific configuration has moved to the Stream Control tab.</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-          <div className="bg-[#161616] border border-gray-800 rounded-3xl p-8 shadow-2xl">
+          <div className="bg-[#161616] border border-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl">
             <h3 className="text-xl font-semibold text-white mb-6 border-b border-gray-800 pb-3 flex items-center">
               <Lock className="w-6 h-6 mr-3 text-red-500" /> User Security
             </h3>
@@ -144,8 +144,8 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="bg-[#161616] border border-gray-800 rounded-3xl p-8 shadow-2xl">
-            <div className="mb-6 border-b border-gray-800 pb-3 flex items-center justify-between">
+          <div className="bg-[#161616] border border-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl">
+            <div className="mb-6 border-b border-gray-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h3 className="text-xl font-semibold text-white flex items-center">
                 <Key className="w-6 h-6 mr-3 text-red-500" /> Stream Key Profiles pool
               </h3>
@@ -201,8 +201,8 @@ export default function SettingsPage() {
             )}
           </div>
 
-          <div className="bg-[#161616] border border-gray-800 rounded-3xl p-8 shadow-2xl">
-            <div className="mb-6 border-b border-gray-800 pb-3 flex items-center justify-between">
+          <div className="bg-[#161616] border border-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl">
+            <div className="mb-6 border-b border-gray-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h3 className="text-xl font-semibold text-white flex items-center">
                 <FolderKanban className="w-6 h-6 mr-3 text-red-500" /> Stream Key Collections (Groups)
               </h3>

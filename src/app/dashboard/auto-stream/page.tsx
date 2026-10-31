@@ -437,17 +437,17 @@ export default function AutoStreamPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8" suppressHydrationWarning>
+    <div className="p-3 sm:p-5 lg:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8" suppressHydrationWarning>
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-6">
         <div>
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20">
+            <div className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 shrink-0">
               <Zap className="w-6 h-6" />
             </div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Auto Streamer & Scheduler</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Auto Streamer & Scheduler</h1>
           </div>
-          <p className="text-gray-400 mt-2 text-sm">
+          <p className="text-gray-400 mt-2 text-xs sm:text-sm">
             Automate 24/7 loop cycles (1 hour stream + 5 min break) & scheduled YouTube live events with ultra-low VPS CPU.
           </p>
         </div>
@@ -670,8 +670,8 @@ export default function AutoStreamPage() {
                     }`}
                 >
                   {/* Container Header Banner */}
-                  <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-800/80 text-[11px]">
-                    <div className="flex items-center space-x-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-4 border-b border-gray-800/80 text-[11px]">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                       <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-purple-950/50 text-purple-300 border border-purple-500/30 flex items-center space-x-1">
                         <Box className="w-3 h-3 text-purple-400" />
                         <span>CONTAINER #{task.id.slice(0, 8).toUpperCase()}</span>
@@ -694,7 +694,7 @@ export default function AutoStreamPage() {
                       )}
                     </div>
                     {/* Enable Toggle Switch */}
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 self-end sm:self-auto shrink-0">
                       <span className="text-gray-400 text-[10px]">{isEnabled ? 'Container Active' : 'Container Paused'}</span>
                       <button
                         onClick={() => handleTriggerAction(task.id, 'toggle')}

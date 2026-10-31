@@ -142,8 +142,8 @@ export default function StreamControl() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-semibold text-white">Multi-Stream Control</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-semibold text-white">Multi-Stream Control</h2>
         <button
           onClick={createNewStream}
           className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all font-semibold"
@@ -169,7 +169,7 @@ export default function StreamControl() {
                 className="bg-[#111] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl relative"
               >
                 {/* Header Strip */}
-                <div className="bg-[#161616] border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+                <div className="bg-[#161616] border-b border-gray-800 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center space-x-4">
                     <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${isRunning ? 'bg-green-500 text-green-500 animate-pulse' : 'bg-red-500 text-red-500'}`} />
                     <h3 className="text-xl font-bold text-white">{streamDef.name}</h3>
@@ -307,14 +307,14 @@ export default function StreamControl() {
 
       {/* Full Modal for Edit / Configure Stream */}
       {editingStream && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-hidden">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#161616] border border-gray-800 rounded-3xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden"
+            className="bg-[#161616] border border-gray-800 rounded-2xl sm:rounded-3xl w-full max-w-5xl max-h-[92vh] sm:max-h-[95vh] flex flex-col shadow-2xl overflow-hidden"
           >
-            <div className="px-8 py-5 border-b border-gray-800 flex justify-between items-center bg-[#111] z-10 shrink-0">
-              <h2 className="text-2xl font-bold text-white flex items-center">
+            <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-gray-800 flex justify-between items-center bg-[#111] z-10 shrink-0">
+              <h2 className="text-lg sm:text-2xl font-bold text-white flex items-center truncate mr-2">
                 <Settings className="w-6 h-6 mr-3 text-red-500" />
                 {isCreating ? 'Create New Stream Configuration' : `Configure Stream: ${editingStream.name}`}
               </h2>
@@ -323,7 +323,7 @@ export default function StreamControl() {
               </button>
             </div>
 
-            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar space-y-8">
+            <div className="p-4 sm:p-6 lg:p-8 flex-1 overflow-y-auto custom-scrollbar space-y-6 sm:space-y-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                 {/* Left Column Settings */}
@@ -525,7 +525,7 @@ export default function StreamControl() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-800 bg-[#111] flex justify-end space-x-4 shrink-0">
+            <div className="p-4 sm:p-6 border-t border-gray-800 bg-[#111] flex flex-wrap items-center justify-end gap-3 shrink-0">
               <button onClick={() => setEditingStream(null)} className="px-6 py-3 rounded-xl text-gray-400 font-medium hover:text-white transition-colors bg-gray-800/50 hover:bg-gray-800">
                 Cancel
               </button>

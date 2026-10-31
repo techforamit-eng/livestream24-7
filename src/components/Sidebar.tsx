@@ -1,10 +1,11 @@
 'use client'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Radio, Settings, LogOut, Film, Users, ArrowLeftCircle, ShieldCheck, FolderKanban, Zap } from 'lucide-react';
+import { LayoutDashboard, Radio, Settings, LogOut, Film, Users, ArrowLeftCircle, ShieldCheck, FolderKanban, Zap, X } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -21,7 +22,12 @@ const navItems = [
   { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [currentRole, setCurrentRole] = useState<string | null>(null);
   const [isImpersonating, setIsImpersonating] = useState(false);
@@ -55,12 +61,21 @@ export function Sidebar() {
     }
   };
 
-  return (
-    <div className="flex flex-col w-64 h-full bg-[#111] text-gray-300 border-r border-gray-800">
-      <div className="flex items-center justify-center h-20 border-b border-gray-800 bg-[#161616]">
-        <h1 className="text-xl font-bold text-white tracking-widest uppercase">
+  const renderSidebarContent = (isMobile: boolean = false) => (
+    <div className="flex flex-col h-full bg-[#111] text-gray-300">
+      <div className="flex items-center justify-between px-6 h-16 sm:h-20 border-b border-gray-800 bg-[#161616]">
+        <h1 className="text-lg sm:text-xl font-bold text-white tracking-widest uppercase">
           <span className="text-red-500">V Magic</span> Digital
         </h1>
+        {isMobile && (
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-white rounded-xl hover:bg-gray-800 transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Impersonation Warning Badge */}
@@ -79,7 +94,7 @@ export function Sidebar() {
         </div>
       )}
 
-      <nav className="flex-1 py-4 space-y-2 px-4 mt-2">
+      <nav className="flex-1 py-4 space-y-1.5 px-3 mt-1 overflow-y-auto">
         {navItems.map((item) => {
           if ((item as any).adminOnly && currentRole !== 'admin') return null;
           const isActive = pathname === item.href;
@@ -87,30 +102,33 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => {
+                if (isMobile && onClose) onClose();
+              }}
               className={cn(
-                'flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors',
+                'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all text-sm font-medium',
                 isActive
-                  ? 'bg-red-500/10 text-red-500'
-                  : 'hover:bg-gray-800 hover:text-white'
+                  ? 'bg-red-500/15 text-red-400 font-semibold border border-red-500/20 shadow-sm'
+                  : 'hover:bg-gray-800/60 hover:text-white text-gray-400'
               )}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
+              <item.icon className="w-5 h-5 shrink-0" />
+              <span className="truncate">{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-800 space-y-2">
+      <div className="p-4 border-t border-gray-800 space-y-2 mt-auto">
         {/* Switch back to Admin button — only visible when impersonating */}
         {isImpersonating && (
           <button
             onClick={switchBackToAdmin}
             disabled={switchingBack}
-            className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-amber-500/20 transition-all font-semibold text-sm"
+            className="flex items-center space-x-3 px-4 py-2.5 w-full rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-amber-500/20 transition-all font-semibold text-sm"
           >
             <ArrowLeftCircle className="w-5 h-5 shrink-0" />
-            <span>{switchingBack ? 'Switching...' : 'Return to Admin'}</span>
+            <span className="truncate">{switchingBack ? 'Switching...' : 'Return to Admin'}</span>
           </button>
         )}
         <button
@@ -118,12 +136,47 @@ export function Sidebar() {
             await fetch('/api/auth', { method: 'DELETE' });
             window.location.href = '/';
           }}
-          className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-colors"
+          className="flex items-center space-x-3 px-4 py-2.5 w-full rounded-xl hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors text-sm font-medium"
         >
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium">Logout</span>
+          <LogOut className="w-5 h-5 shrink-0" />
+          <span>Logout</span>
         </button>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Fixed Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 h-full bg-[#111] text-gray-300 border-r border-gray-800 shrink-0">
+        {renderSidebarContent(false)}
+      </aside>
+
+      {/* Mobile Drawer */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 md:hidden flex">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            {/* Slide-out Drawer */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 260 }}
+              className="relative w-72 max-w-[85vw] h-full z-10 shadow-2xl border-r border-gray-800"
+            >
+              {renderSidebarContent(true)}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
