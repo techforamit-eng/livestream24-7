@@ -66,13 +66,13 @@ export async function POST(req: Request) {
       }
       const updated = (getConfig().autoTasks || []).map(t => {
         if (t.id === taskId) {
-          return { ...t, enabled: true, state: 'starting' as const };
+          return { ...t, enabled: true, state: 'starting' as const, lastError: undefined, lastFailedAt: undefined };
         }
         return t;
       });
       saveConfig({ autoTasks: updated });
       const currentTask = (getConfig().autoTasks || []).find(t => t.id === taskId) || task;
-      const res = await startAutoStreamTask({ ...currentTask, enabled: true, state: 'starting' });
+      const res = await startAutoStreamTask({ ...currentTask, enabled: true, state: 'starting', lastError: undefined, lastFailedAt: undefined });
       return NextResponse.json(res);
     }
 
@@ -84,6 +84,8 @@ export async function POST(req: Request) {
             ...t,
             enabled: false, // Turn OFF so it never auto-recreates!
             state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any,
+            lastError: undefined,
+            lastFailedAt: undefined,
             sessionStartTime: undefined,
             nextEventAt: undefined,
             activeBroadcasts: undefined
@@ -106,6 +108,8 @@ export async function POST(req: Request) {
             ...t,
             enabled: newEnabled,
             state: (newEnabled ? t.state : (t.mode === 'loop' ? 'idle' : 'scheduled')) as any,
+            lastError: newEnabled ? undefined : t.lastError,
+            lastFailedAt: newEnabled ? undefined : t.lastFailedAt,
             sessionStartTime: newEnabled ? t.sessionStartTime : undefined,
             nextEventAt: newEnabled ? t.nextEventAt : undefined,
             activeBroadcasts: newEnabled ? t.activeBroadcasts : undefined

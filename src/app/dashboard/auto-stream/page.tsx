@@ -770,7 +770,7 @@ export default function AutoStreamPage() {
                           {isCooldown && '☕ CONTAINER COOLDOWN BREAK'}
                           {currentState === 'scheduled' && isEnabled && '🕒 CONTAINER SCHEDULED'}
                           {currentState === 'idle' && isEnabled && '⚡ CONTAINER READY'}
-                          {!isEnabled && '⏸️ CONTAINER DISABLED'}
+                          {!isEnabled && (task.lastError ? '⚠️ CONTAINER AUTO-PAUSED' : '⏸️ CONTAINER DISABLED')}
                         </div>
                         <div className="text-[11px] text-gray-400">
                           {isStreaming && `Remaining: ${formatRemainingTime(status.nextEventAt || task.nextEventAt)}`}
@@ -780,7 +780,12 @@ export default function AutoStreamPage() {
                               ? `Slots: ${task.scheduleSettings.timeSlots.map(s => s.startTime).join(', ')}`
                               : `Starts at ${task.scheduleSettings?.timeSlots?.[0]?.startTime || task.scheduleSettings?.startTime || '18:00'}`
                           )}
-                          {currentState === 'idle' && 'Waiting for next trigger'}
+                          {currentState === 'idle' && isEnabled && 'Waiting for next trigger'}
+                          {!isEnabled && (task.lastError ? (
+                            <span className="text-red-400 font-medium truncate block max-w-sm sm:max-w-md" title={task.lastError}>
+                              Reason: {task.lastError}
+                            </span>
+                          ) : 'Waiting to be activated')}
                         </div>
                       </div>
                     </div>

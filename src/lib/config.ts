@@ -87,6 +87,8 @@ export interface AutoStreamTask {
   };
   enabled: boolean;
   state: 'idle' | 'starting' | 'streaming' | 'cooldown' | 'scheduled';
+  lastError?: string;
+  lastFailedAt?: string;
   activeSlotId?: string;
   sessionStartTime?: string;
   nextEventAt?: string;

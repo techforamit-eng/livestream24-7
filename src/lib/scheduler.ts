@@ -245,6 +245,53 @@ export async function handleDurationCompleted(taskId: string) {
 }
 
 /**
+ * Permanently stop and pause an auto-stream task on error to prevent fast retry loops
+ */
+export async function failAndPauseTask(taskId: string, errorReason: string) {
+  addAutoLog(taskId, `🛑 Container Auto-Paused: ${errorReason}`);
+
+  // Clear any timers
+  const active = activeAutoTasks.get(taskId);
+  if (active) {
+    active.isStopping = true;
+    if (active.stopTimer) {
+      clearTimeout(active.stopTimer);
+      active.stopTimer = undefined;
+    }
+  }
+
+  // Force kill any orphaned process for this container
+  const pid = getTaskPid(taskId);
+  if (pid) {
+    killProcess(pid);
+    removeAutoTaskPid(taskId);
+  }
+  if (active) {
+    active.process = undefined;
+    active.pid = undefined;
+  }
+
+  // Cleanly mark enabled: false and record lastError + lastFailedAt
+  const resetTasks = (getConfig().autoTasks || []).map(t => {
+    if (t.id === taskId) {
+      return {
+        ...t,
+        enabled: false,
+        state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any,
+        lastError: errorReason,
+        lastFailedAt: new Date().toISOString(),
+        pid: undefined,
+        sessionStartTime: undefined,
+        nextEventAt: undefined,
+        activeBroadcasts: undefined
+      };
+    }
+    return t;
+  });
+  saveConfig({ autoTasks: resetTasks });
+}
+
+/**
  * Start streaming for an automated task
  */
 export async function startAutoStreamTask(task: AutoStreamTask, customDurationMins?: number, slotId?: string): Promise<{ success: boolean; message: string }> {
@@ -298,26 +345,18 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     const role = task.userId || 'admin';
     const resolved = findVideoPathOnDisk(task.video, role);
     if (!resolved) {
-      addAutoLog(task.id, `Error: Video file "${task.video}" not found on disk.`);
-      const resetTasks = (getConfig().autoTasks || []).map(t => {
-        if (t.id === task.id) return { ...t, enabled: false, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
-        return t;
-      });
-      saveConfig({ autoTasks: resetTasks });
-      return { success: false, message: `Video file "${task.video}" not found on disk.` };
+      const errMsg = `Video file "${task.video}" not found on disk.`;
+      await failAndPauseTask(task.id, errMsg);
+      return { success: false, message: errMsg };
     }
     const videoPath = resolved.fullPath.replace(/\\/g, '/');
 
     // 2. Check target channels (Deduplicated)
     const uniqueChannels = Array.from(new Set(task.channelIds || []));
     if (uniqueChannels.length === 0) {
-      addAutoLog(task.id, `Error: No target YouTube channels selected.`);
-      const resetTasks = (getConfig().autoTasks || []).map(t => {
-        if (t.id === task.id) return { ...t, enabled: false, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
-        return t;
-      });
-      saveConfig({ autoTasks: resetTasks });
-      return { success: false, message: 'No target YouTube channels selected.' };
+      const errMsg = 'No target YouTube channels selected.';
+      await failAndPauseTask(task.id, errMsg);
+      return { success: false, message: errMsg };
     }
 
     const streamCount = Math.min(5, Math.max(1, Number(task.streamCount) || 1));
@@ -389,13 +428,8 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     }
 
     if (endpoints.length === 0) {
-      const detailStr = errorDetails.length > 0 ? errorDetails.join(' | ') : 'No endpoints returned';
-      addAutoLog(task.id, `Error: Could not create broadcasts on any channel. ${detailStr}`);
-      const resetTasks = (getConfig().autoTasks || []).map(t => {
-        if (t.id === task.id) return { ...t, enabled: false, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
-        return t;
-      });
-      saveConfig({ autoTasks: resetTasks });
+      const detailStr = errorDetails.length > 0 ? errorDetails.join(' | ') : 'No endpoints returned from YouTube API';
+      await failAndPauseTask(task.id, `Failed to create broadcasts: ${detailStr}`);
       return { 
         success: false, 
         message: `Could not create broadcasts: ${detailStr}` 
@@ -564,25 +598,11 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
         return;
       }
 
-      // If crashed immediately on startup (abnormal exit within 15 seconds)
-      if (code !== 0 && runDurationSec < 15) {
-        addAutoLog(task.id, `❌ Stream failed on startup (Exit code: ${code}). Pausing container to prevent endless cooldown/upcoming broadcast loop.`);
-        await stopAutoStreamTask(task.id, `Startup failure (Code ${code})`);
-        const resetTasks = (getConfig().autoTasks || []).map(t => {
-          if (t.id === task.id) {
-            return {
-              ...t,
-              enabled: false,
-              state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any,
-              pid: undefined,
-              sessionStartTime: undefined,
-              nextEventAt: undefined,
-              activeBroadcasts: undefined
-            };
-          }
-          return t;
-        });
-        saveConfig({ autoTasks: resetTasks });
+      // If abnormal exit (code !== 0), pause container immediately to prevent retry loops
+      if (code !== 0) {
+        const exitMsg = `FFmpeg stream process crashed (Exit code: ${code}) after ${runDurationSec.toFixed(1)}s`;
+        addAutoLog(task.id, `❌ ${exitMsg}. Pausing container.`);
+        await failAndPauseTask(task.id, exitMsg);
         return;
       }
 
@@ -598,13 +618,9 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     return { success: true, message: 'Stream started successfully.' };
 
   } catch (err: any) {
-    addAutoLog(task.id, `Failed to start stream: ${err.message}`);
-    const resetTasks = (getConfig().autoTasks || []).map(t => {
-      if (t.id === task.id) return { ...t, enabled: false, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
-      return t;
-    });
-    saveConfig({ autoTasks: resetTasks });
-    return { success: false, message: err.message };
+    const rawMsg = err.message || 'Failed to start stream';
+    await failAndPauseTask(task.id, rawMsg);
+    return { success: false, message: rawMsg };
   } finally {
     startingTasks.delete(task.id);
   }
@@ -771,6 +787,11 @@ async function processAutomationTick() {
 
   for (const task of tasks) {
     if (!task.enabled) continue;
+
+    // Circuit Breaker / Anti-hammering Guard: If task failed recently, enforce minimum 60s cooldown before ANY automatic attempt
+    if (task.lastFailedAt && (now - new Date(task.lastFailedAt).getTime() < 60 * 1000)) {
+      continue;
+    }
 
     // 1. Loop Mode Handling (Duration Run -> Cooldown Break -> Auto-Restart)
     if (task.mode === 'loop') {

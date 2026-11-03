@@ -290,30 +290,22 @@ export async function createLiveBroadcastAndStream(channelId: string, options: {
       const ext = path.extname(options.thumbnailPath).toLowerCase();
       const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
 
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          console.log(`[YouTube] Uploading custom thumbnail for broadcast ${broadcastId} (attempt ${attempt}/3)...`);
-          await youtube.thumbnails.set({
-            videoId: broadcastId,
-            media: {
-              mimeType,
-              body: fs.createReadStream(options.thumbnailPath)
-            }
-          });
-          thumbnailUploaded = true;
-          thumbnailError = undefined;
-          console.log(`[YouTube] Successfully applied custom thumbnail for broadcast ${broadcastId}!`);
-          break;
-        } catch (thumbErr: any) {
-          const rawMsg = thumbErr.response?.data?.error?.message || thumbErr.message || 'Unknown thumbnail upload error';
-          thumbnailError = rawMsg;
-          console.warn(`[YouTube] Thumbnail upload attempt ${attempt} failed for broadcast ${broadcastId}:`, rawMsg);
-
-          if (attempt < 3) {
-            // Wait 2.5 seconds before next retry
-            await new Promise(resolve => setTimeout(resolve, 2500));
+      try {
+        console.log(`[YouTube] Uploading custom thumbnail for broadcast ${broadcastId}...`);
+        await youtube.thumbnails.set({
+          videoId: broadcastId,
+          media: {
+            mimeType,
+            body: fs.createReadStream(options.thumbnailPath)
           }
-        }
+        });
+        thumbnailUploaded = true;
+        thumbnailError = undefined;
+        console.log(`[YouTube] Successfully applied custom thumbnail for broadcast ${broadcastId}!`);
+      } catch (thumbErr: any) {
+        const rawMsg = thumbErr.response?.data?.error?.message || thumbErr.message || 'Unknown thumbnail upload error';
+        thumbnailError = rawMsg;
+        console.warn(`[YouTube] Thumbnail upload failed for broadcast ${broadcastId} (skipped to save quota):`, rawMsg);
       }
     }
   }
