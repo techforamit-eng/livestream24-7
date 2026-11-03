@@ -300,7 +300,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     if (!resolved) {
       addAutoLog(task.id, `Error: Video file "${task.video}" not found on disk.`);
       const resetTasks = (getConfig().autoTasks || []).map(t => {
-        if (t.id === task.id) return { ...t, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
+        if (t.id === task.id) return { ...t, enabled: false, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
         return t;
       });
       saveConfig({ autoTasks: resetTasks });
@@ -313,7 +313,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
     if (uniqueChannels.length === 0) {
       addAutoLog(task.id, `Error: No target YouTube channels selected.`);
       const resetTasks = (getConfig().autoTasks || []).map(t => {
-        if (t.id === task.id) return { ...t, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
+        if (t.id === task.id) return { ...t, enabled: false, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
         return t;
       });
       saveConfig({ autoTasks: resetTasks });
@@ -391,7 +391,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       const detailStr = errorDetails.length > 0 ? errorDetails.join(' | ') : 'No endpoints returned';
       addAutoLog(task.id, `Error: Could not create broadcasts on any channel. ${detailStr}`);
       const resetTasks = (getConfig().autoTasks || []).map(t => {
-        if (t.id === task.id) return { ...t, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
+        if (t.id === task.id) return { ...t, enabled: false, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
         return t;
       });
       saveConfig({ autoTasks: resetTasks });
@@ -599,7 +599,7 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
   } catch (err: any) {
     addAutoLog(task.id, `Failed to start stream: ${err.message}`);
     const resetTasks = (getConfig().autoTasks || []).map(t => {
-      if (t.id === task.id) return { ...t, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
+      if (t.id === task.id) return { ...t, enabled: false, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
       return t;
     });
     saveConfig({ autoTasks: resetTasks });
