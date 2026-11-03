@@ -14,6 +14,7 @@ interface ChannelInfo {
   thumbnail?: string;
   userId?: string;
   connectedAt: string;
+  hasRefreshToken?: boolean;
 }
 
 export default function AutoStreamPage() {
@@ -575,11 +576,16 @@ export default function AutoStreamPage() {
                   )}
                   <div className="truncate">
                     <h4 className="text-sm font-bold text-white truncate">{ch.title}</h4>
-                    <div className="flex items-center space-x-2 mt-0.5">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                       <p className="text-xs text-gray-500 truncate">ID: {ch.id}</p>
                       {userRole === 'admin' && ch.userId && (
                         <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-950/80 text-blue-300 border border-blue-500/30 font-mono">
                           {ch.userId}
+                        </span>
+                      )}
+                      {ch.hasRefreshToken === false && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-500/30 font-sans font-semibold" title="Token missing refresh_token. Please reconnect this channel.">
+                          ⚠️ Reconnect Needed
                         </span>
                       )}
                     </div>

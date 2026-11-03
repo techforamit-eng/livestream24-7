@@ -339,8 +339,13 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
       }
     }
 
+    const errorDetails: string[] = [];
+
     // Create YouTube broadcast & stream for each unique channel and instance
     for (const channelId of uniqueChannels) {
+      const channelObj = (getConfig().connectedChannels || []).find(c => c.id === channelId);
+      const chName = channelObj?.title || channelId;
+
       for (let instanceIdx = 1; instanceIdx <= streamCount; instanceIdx++) {
         try {
           const streamInfo = await createLiveBroadcastAndStream(channelId, {
@@ -365,21 +370,35 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
           }
 
           const instanceLabel = streamCount > 1 ? ` [Stream #${instanceIdx}/${streamCount}]` : '';
-          addAutoLog(task.id, `Created YouTube broadcast for channel ${channelId}${instanceLabel} (ID: ${streamInfo.broadcastId})${thumbLog}`);
+          addAutoLog(task.id, `Created YouTube broadcast for channel "${chName}"${instanceLabel} (ID: ${streamInfo.broadcastId})${thumbLog}`);
         } catch (err: any) {
-          addAutoLog(task.id, `Failed to create broadcast on channel ${channelId}: ${err.message}`);
+          const rawErr = err?.response?.data?.error?.message || err.message || 'Unknown error';
+          let userHint = rawErr;
+          if (rawErr.includes('invalid_grant') || rawErr.includes('expired') || rawErr.includes('revoked')) {
+            userHint = 'Google Token Expired/Revoked. Please reconnect this channel via Connect Channel button.';
+          } else if (rawErr.includes('liveStreamingNotEnabled')) {
+            userHint = 'Live Streaming is not enabled on this channel. Please enable Live in YouTube Studio.';
+          } else if (rawErr.includes('quotaExceeded')) {
+            userHint = 'YouTube Data API daily quota limit exceeded (10,000 units/day).';
+          }
+          errorDetails.push(`[${chName}] ${userHint}`);
+          addAutoLog(task.id, `❌ Failed to create broadcast on channel "${chName}": ${userHint}`);
         }
       }
     }
 
     if (endpoints.length === 0) {
-      addAutoLog(task.id, `Error: Could not create broadcasts on any channel.`);
+      const detailStr = errorDetails.length > 0 ? errorDetails.join(' | ') : 'No endpoints returned';
+      addAutoLog(task.id, `Error: Could not create broadcasts on any channel. ${detailStr}`);
       const resetTasks = (getConfig().autoTasks || []).map(t => {
         if (t.id === task.id) return { ...t, state: (t.mode === 'loop' ? 'idle' : 'scheduled') as any };
         return t;
       });
       saveConfig({ autoTasks: resetTasks });
-      return { success: false, message: 'Could not create broadcasts on any connected channel.' };
+      return { 
+        success: false, 
+        message: `Could not create broadcasts: ${detailStr}` 
+      };
     }
 
     // 3. Duration setup
