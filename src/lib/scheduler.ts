@@ -372,14 +372,15 @@ export async function startAutoStreamTask(task: AutoStreamTask, customDurationMi
           const instanceLabel = streamCount > 1 ? ` [Stream #${instanceIdx}/${streamCount}]` : '';
           addAutoLog(task.id, `Created YouTube broadcast for channel "${chName}"${instanceLabel} (ID: ${streamInfo.broadcastId})${thumbLog}`);
         } catch (err: any) {
-          const rawErr = err?.response?.data?.error?.message || err.message || 'Unknown error';
+          const rawErr = (err?.response?.data?.error?.message || err.message || 'Unknown error').replace(/<[^>]*>/g, '').trim();
           let userHint = rawErr;
-          if (rawErr.includes('invalid_grant') || rawErr.includes('expired') || rawErr.includes('revoked')) {
+          const lower = rawErr.toLowerCase();
+          if (lower.includes('quota')) {
+            userHint = 'YouTube Data API daily quota limit exceeded (10,000 units/day limit reached).';
+          } else if (lower.includes('invalid_grant') || lower.includes('expired') || lower.includes('revoked')) {
             userHint = 'Google Token Expired/Revoked. Please reconnect this channel via Connect Channel button.';
-          } else if (rawErr.includes('liveStreamingNotEnabled')) {
+          } else if (lower.includes('livestreamingnotenabled')) {
             userHint = 'Live Streaming is not enabled on this channel. Please enable Live in YouTube Studio.';
-          } else if (rawErr.includes('quotaExceeded')) {
-            userHint = 'YouTube Data API daily quota limit exceeded (10,000 units/day).';
           }
           errorDetails.push(`[${chName}] ${userHint}`);
           addAutoLog(task.id, `❌ Failed to create broadcast on channel "${chName}": ${userHint}`);
